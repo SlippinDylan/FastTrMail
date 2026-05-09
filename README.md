@@ -68,7 +68,7 @@ bash scripts/package.sh
 ## CI
 
 - 版本号以 `extension/manifest.json` 为唯一来源
-- push 到 `main`：自动生成版本化 artifact
+- push 到 `main`：自动生成版本化 artifact，并更新固定的 `latest` GitHub Release
 - GitHub Actions Summary 会显示当前版本号和产物路径
 - 如需发布 Release，仍可额外 push tag，例如 `v1.0.0`
 

@@ -1,5 +1,8 @@
 name: package-extension
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 on:
   push:
     branches:
@@ -45,6 +48,30 @@ jobs:
             echo "- Latest zip: \`dist/fasttrmail.zip\`"
             echo "- Versioned zip: \`dist/fasttrmail-${{ steps.version.outputs.value }}.zip\`"
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publish latest release asset
+        if: github.ref == 'refs/heads/main'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          NOTES_FILE="$(mktemp)"
+          {
+            echo "Automated latest build from \`main\`."
+            echo ""
+            echo "- Version: \`${{ steps.version.outputs.value }}\`"
+            echo "- Commit: \`${GITHUB_SHA}\`"
+          } > "$NOTES_FILE"
+
+          if gh release view latest >/dev/null 2>&1; then
+            gh release edit latest --title "Latest (${{ steps.version.outputs.value }})" --notes-file "$NOTES_FILE"
+          else
+            gh release create latest --title "Latest (${{ steps.version.outputs.value }})" --notes-file "$NOTES_FILE"
+          fi
+
+          gh release upload latest \
+            "dist/fasttrmail.zip" \
+            "dist/fasttrmail-${{ steps.version.outputs.value }}.zip" \
+            --clobber
 
       - name: Publish release asset
         if: startsWith(github.ref, 'refs/tags/')
