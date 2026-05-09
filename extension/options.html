@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>FastTrMail 设置</title>
+    <link rel="stylesheet" href="options.css">
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero card">
+        <div class="hero-copy">
+          <h1>FastTrMail</h1>
+          <p class="intro">
+            给网页邮箱正文加一个内嵌翻译按钮。点击邮箱工具区里的“翻译”后，译文会追加在原文下方，不覆盖原文。
+          </p>
+        </div>
+        <img class="hero-icon" src="icons/app.png" alt="扩展图标">
+      </section>
+
+      <form id="settings-form" class="form">
+        <section class="card">
+          <div class="card-header">
+            <h2>总设置</h2>
+            <p>这里决定扩展默认使用哪个翻译服务，以及翻译成哪种目标语言。</p>
+          </div>
+
+          <label class="field">
+            <span>翻译服务 Provider</span>
+            <select id="provider" name="provider">
+              <option value="google-web">Google Web（免 Key）</option>
+              <option value="edge-web">Microsoft Edge（免 Key）</option>
+              <option value="google-api">Google Cloud API</option>
+              <option value="microsoft">Microsoft Translator API</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span>目标语言 Target language</span>
+            <select id="targetLanguage" name="targetLanguage"></select>
+          </label>
+        </section>
+
+        <section id="google-card" class="card provider-card">
+          <div class="card-header">
+            <h2>Google Cloud API 配置</h2>
+            <p>如果总设置里选择了 Google Cloud API，这里的 API Key 就会被用于翻译请求。</p>
+          </div>
+
+          <label class="field">
+            <span>Google Cloud Translation API Key</span>
+            <input id="googleApiKey" name="googleApiKey" type="password" autocomplete="off" spellcheck="false" placeholder="填入你的 Google Cloud API Key">
+          </label>
+
+          <div class="link-row">
+            <a class="link-button" href="https://docs.cloud.google.com/translate/docs/setup" target="_blank" rel="noreferrer">官方开通说明</a>
+            <a class="link-button" href="https://cloud.google.com/api-keys/docs/create-manage-api-keys" target="_blank" rel="noreferrer">官方 API Key 管理</a>
+            <a class="link-button" href="https://console.cloud.google.com/apis/library/translate.googleapis.com" target="_blank" rel="noreferrer">打开 Google API 控制台</a>
+          </div>
+        </section>
+
+        <section id="microsoft-card" class="card provider-card">
+          <div class="card-header">
+            <h2>Microsoft API 配置</h2>
+            <p>如果总设置里选择了 Microsoft Translator API，这里的 Key 和 Region 会用于翻译请求。</p>
+          </div>
+
+          <label class="field">
+            <span>Microsoft Translator API Key</span>
+            <input id="microsoftApiKey" name="microsoftApiKey" type="password" autocomplete="off" spellcheck="false" placeholder="填入你的 Microsoft Translator API Key">
+          </label>
+
+          <label class="field">
+            <span>Microsoft Translator Region</span>
+            <input id="microsoftRegion" name="microsoftRegion" type="text" placeholder="例如 eastasia 或 global" autocomplete="off" spellcheck="false">
+          </label>
+
+          <div class="link-row">
+            <a class="link-button" href="https://learn.microsoft.com/en-us/azure/ai-services/translator/text-translation/quickstart/rest-api" target="_blank" rel="noreferrer">官方申请与快速开始</a>
+            <a class="link-button" href="https://portal.azure.com/" target="_blank" rel="noreferrer">打开 Azure Portal</a>
+          </div>
+        </section>
+
+        <section class="card actions-card">
+          <div class="actions">
+            <button type="submit">保存设置</button>
+            <span id="status" class="status" role="status" aria-live="polite"></span>
+          </div>
+        </section>
+      </form>
+    </main>
+    <script src="options.js"></script>
+  </body>
+</html>
