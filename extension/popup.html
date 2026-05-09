@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>FastTrMail</title>
+    <link rel="stylesheet" href="popup.css">
+  </head>
+  <body>
+    <main class="popup">
+      <section class="popup-card">
+        <div class="popup-header">
+          <img class="popup-icon" src="icons/app.png" alt="扩展图标">
+          <div>
+            <h1>FastTrMail</h1>
+            <p>网页邮箱正文翻译助手</p>
+          </div>
+        </div>
+
+        <div class="summary">
+          <div class="summary-row">
+            <span class="summary-label">当前 Provider</span>
+            <span id="current-provider" class="summary-value">加载中</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">当前目标语言</span>
+            <span id="current-language" class="summary-value">加载中</span>
+          </div>
+        </div>
+
+        <div class="popup-actions">
+          <button id="open-options" type="button">打开设置</button>
+        </div>
+
+        <p class="tip">进入邮件详情页后，点击邮件右上操作区里的“翻译”按钮即可。</p>
+      </section>
+    </main>
+    <script src="popup.js"></script>
+  </body>
+</html>
