@@ -1,0 +1,89 @@
+:root {
+  font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  color: #1a2438;
+  background: #eef4fb;
+}
+
+body {
+  margin: 0;
+}
+
+.popup {
+  width: 320px;
+  padding: 14px;
+}
+
+.popup-card {
+  padding: 16px;
+  border: 1px solid #d7e0ee;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 14px 34px rgba(29, 48, 79, 0.12);
+}
+
+.popup-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.popup-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+.popup-header h1 {
+  margin: 0 0 4px;
+  font-size: 16px;
+}
+
+.popup-header p {
+  margin: 0;
+  color: #5c6d85;
+  font-size: 12px;
+}
+
+.summary {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.summary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+}
+
+.summary-label {
+  color: #5c6d85;
+}
+
+.summary-value {
+  color: #183d69;
+  font-weight: 600;
+}
+
+.popup-actions button {
+  width: 100%;
+  min-height: 40px;
+  border: 0;
+  border-radius: 10px;
+  background: #0b69d7;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tip {
+  margin: 12px 0 0;
+  color: #5c6d85;
+  font-size: 12px;
+  line-height: 1.6;
+}

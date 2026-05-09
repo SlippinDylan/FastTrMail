@@ -1,0 +1,50 @@
+.fmt-translate-button {
+  position: relative;
+  margin-right: 8px;
+}
+
+.fmt-translate-button.fmt-translate-button-active {
+  box-shadow: inset 0 0 0 1px rgba(70, 125, 222, 0.35);
+}
+
+.fmt-translate-button .label {
+  white-space: nowrap;
+}
+
+.fmt-inline-translation,
+.fmt-title-translation {
+  display: block;
+  align-self: flex-start;
+  width: fit-content;
+  max-width: 100%;
+  margin-top: 6px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  background: rgba(101, 152, 230, 0.08);
+  color: #7caeea;
+  font: inherit;
+  line-height: inherit;
+  white-space: pre-line;
+  word-break: break-word;
+}
+
+.fmt-inline-translation[data-state="loading"],
+.fmt-title-translation[data-state="loading"] {
+  background: rgba(169, 185, 208, 0.08);
+  color: #8d9db4;
+}
+
+.fmt-inline-translation[data-state="error"],
+.fmt-title-translation[data-state="error"] {
+  background: rgba(255, 122, 122, 0.08);
+  color: #d56c79;
+}
+
+.fmt-inline-translation-content,
+.fmt-title-translation-content {
+  color: inherit;
+}
+
+.fmt-segment-anchor {
+  display: none;
+}

@@ -1,0 +1,57 @@
+{
+  "manifest_version": 3,
+  "name": "FastTrMail",
+  "version": "1.0.0",
+  "description": "Add an inline translate button to webmail message views and append translated text below the original email body.",
+  "permissions": [
+    "storage",
+    "declarativeNetRequest"
+  ],
+  "host_permissions": [
+    "https://app.fastmail.com/*",
+    "https://edge.microsoft.com/*",
+    "https://translation.googleapis.com/*",
+    "https://api.cognitive.microsofttranslator.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "options_page": "options.html",
+  "icons": {
+    "16": "icons/app.png",
+    "32": "icons/app.png",
+    "48": "icons/app.png",
+    "128": "icons/app.png"
+  },
+  "action": {
+    "default_title": "FastTrMail",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/app.png",
+      "32": "icons/app.png",
+      "48": "icons/app.png",
+      "128": "icons/app.png"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://app.fastmail.com/*"
+      ],
+      "js": [
+        "content/shared.js",
+        "content/runtime.js",
+        "content/thread.js",
+        "content/segments.js",
+        "content/render.js",
+        "content/translation.js",
+        "content/controller.js",
+        "content.js"
+      ],
+      "css": [
+        "content.css"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}
