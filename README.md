@@ -15,7 +15,6 @@ FastTrMail 是一个专门面向 Fastmail 网页版的 Chrome Manifest V3 邮件
 - 翻译结果显示在原文下方，不覆盖原文。
 - 支持以下翻译服务：
   - `Google Web（免 Key，实验性）`
-  - `Microsoft Edge（免 Key）`
   - `Google Cloud API`
   - `Microsoft Translator API`
 - 点击浏览器右上角扩展图标后，直接弹出菜单，可进入设置页。
@@ -59,7 +58,7 @@ FastTrMail 是一个专门面向 Fastmail 网页版的 Chrome Manifest V3 邮件
 
 ## 申请凭据
 
-如果你使用 `Google Web（免 Key）` 或 `Microsoft Edge（免 Key）`，这一步可以跳过。
+如果你使用 `Google Web（免 Key）`，这一步可以跳过。
 
 ### Google
 

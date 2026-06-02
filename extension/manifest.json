@@ -4,11 +4,9 @@
   "version": "1.0.0",
   "description": "Add an inline translate button to webmail message views and append translated text below the original email body.",
   "permissions": [
-    "storage",
-    "declarativeNetRequest"
+    "storage"
   ],
   "host_permissions": [
-    "https://edge.microsoft.com/*",
     "https://translate.googleapis.com/*",
     "https://translation.googleapis.com/*",
     "https://api.cognitive.microsofttranslator.com/*"

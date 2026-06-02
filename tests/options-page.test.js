@@ -131,10 +131,6 @@ test("getProviderPanelState exposes only the matching credential section", () =>
     googleVisible: false,
     microsoftVisible: false
   });
-  assert.deepEqual(toPlainData(page.getProviderPanelState("edge-web")), {
-    googleVisible: false,
-    microsoftVisible: false
-  });
   assert.deepEqual(toPlainData(page.getProviderPanelState("google-api")), {
     googleVisible: true,
     microsoftVisible: false

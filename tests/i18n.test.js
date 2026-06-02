@@ -32,7 +32,7 @@ test("normalizeUiLanguage falls back to auto for unsupported values", () => {
 
 test("provider, target-language, and ui-language labels are localized", () => {
   assert.equal(i18n.getProviderLabel("en", "google-web"), "Google Web (No Key)");
-  assert.equal(i18n.getProviderLabel("zh-TW", "edge-web"), "Microsoft Edge（免 Key）");
+  assert.equal(i18n.getProviderLabel("zh-TW", "microsoft"), "Microsoft Translator API");
   assert.equal(i18n.getTargetLanguageLabel("en", "zh-CN"), "Simplified Chinese");
   assert.equal(i18n.getTargetLanguageLabel("zh-HK", "en"), "英文");
   assert.equal(i18n.getUiLanguageLabel("en", "zh-HK"), "Traditional Chinese (Hong Kong)");

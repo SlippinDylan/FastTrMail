@@ -37,10 +37,6 @@
         return ns.translateWithGoogleWeb(text, languageDefinition, requestEntry?.signal);
       }
 
-      if (settings.provider === "edge-web") {
-        return ns.translateWithEdgeWeb(text, languageDefinition, requestEntry?.signal);
-      }
-
       if (settings.provider === "microsoft") {
         return ns.translateWithMicrosoft(text, settings, languageDefinition, requestEntry?.signal);
       }
@@ -76,10 +72,6 @@
         targetLanguageLabel: languageDefinition.label,
         translatedSegments: translatedSegments.map((item) => item.translatedText)
       };
-    }
-
-    if (settings.provider === "edge-web") {
-      return ns.translateSegmentsWithEdgeWeb(segments, languageDefinition, signal);
     }
 
     if (settings.provider === "microsoft") {
@@ -171,17 +163,6 @@
       targetLanguage: languageDefinition.id,
       targetLanguageLabel: languageDefinition.label,
       translatedText: ns.decodeHtmlEntities(translatedText)
-    };
-  };
-
-  ns.translateWithEdgeWeb = async function translateWithEdgeWeb(text, languageDefinition, signal) {
-    const result = await ns.translateSegmentsWithEdgeWeb([text], languageDefinition, signal);
-    return {
-      provider: result.provider,
-      providerLabel: result.providerLabel,
-      targetLanguage: result.targetLanguage,
-      targetLanguageLabel: result.targetLanguageLabel,
-      translatedText: result.translatedSegments[0]
     };
   };
 
@@ -335,47 +316,4 @@
     };
   };
 
-  ns.translateSegmentsWithEdgeWeb = async function translateSegmentsWithEdgeWeb(segments, languageDefinition, signal) {
-    const token = await ns.getEdgeAuthToken();
-    const endpoint = new URL(ns.EDGE_TRANSLATE_URL);
-    endpoint.searchParams.set("api-version", "3.0");
-    endpoint.searchParams.set("to", languageDefinition.microsoft);
-
-    const response = await fetch(endpoint.toString(), {
-      method: "POST",
-      signal,
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify(segments.map((text) => ({ text })))
-    });
-
-    const data = await response.json().catch(() => ({}));
-
-    if (!response.ok) {
-      throw ns.createError(ERROR_CODES.EDGE_WEB_UNAVAILABLE, {
-        metadata: {
-          provider: "edge-web",
-          upstreamMessage: data?.error?.message || data?.message || ""
-        }
-      });
-    }
-
-    const translatedSegments = Array.isArray(data)
-      ? data.map((item) => item?.translations?.[0]?.text || "")
-      : [];
-
-    if (translatedSegments.length !== segments.length) {
-      throw ns.createError(ERROR_CODES.EDGE_WEB_UNAVAILABLE);
-    }
-
-    return {
-      provider: "edge-web",
-      providerLabel: ns.PROVIDER_LABELS["edge-web"],
-      targetLanguage: languageDefinition.id,
-      targetLanguageLabel: languageDefinition.label,
-      translatedSegments
-    };
-  };
 })(self);

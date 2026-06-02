@@ -11,9 +11,14 @@ test("default settings point to a supported provider and language", () => {
 
 test("provider labels and language labels are derived from the shared catalog", () => {
   assert.equal(catalog.PROVIDER_LABELS["google-web"], "Google Web（免 Key）");
-  assert.equal(catalog.PROVIDER_LABELS["edge-web"], "Microsoft Edge（免 Key）");
+  assert.equal(catalog.PROVIDER_LABELS.microsoft, "Microsoft Translator API");
   assert.equal(catalog.LANGUAGE_LABELS["zh-CN"], "简体中文");
   assert.equal(catalog.LANGUAGE_LABELS.en, "English");
+});
+
+test("provider catalog excludes unsupported edge-web transport", () => {
+  assert.equal(catalog.PROVIDERS.some((provider) => provider.id === "edge-web"), false);
+  assert.equal(Object.hasOwn(catalog.PROVIDER_LABELS, "edge-web"), false);
 });
 
 test("normalizeSettings falls back to supported defaults and trims credential fields", () => {

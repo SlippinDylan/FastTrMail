@@ -6,7 +6,6 @@
     "background/request-registry.js",
     "background/shared.js",
     "background/settings.js",
-    "background/edge-auth.js",
     "background/providers.js",
     "background/handlers.js"
   ];

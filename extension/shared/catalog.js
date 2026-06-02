@@ -1,7 +1,6 @@
 (function initCatalog(scope) {
   const PROVIDERS = [
     { id: "google-web", label: "Google Web（免 Key）" },
-    { id: "edge-web", label: "Microsoft Edge（免 Key）" },
     { id: "google-api", label: "Google Cloud API" },
     { id: "microsoft", label: "Microsoft Translator API" }
   ];

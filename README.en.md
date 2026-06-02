@@ -15,7 +15,6 @@ FastTrMail is a Chrome Manifest V3 extension built specifically for Fastmail Web
 - Appends translated content below the original message without replacing the source text
 - Supports these translation providers:
   - `Google Web (no key, experimental)`
-  - `Microsoft Edge (no key)`
   - `Google Cloud API`
   - `Microsoft Translator API`
 - Opens a popup from the Chrome toolbar and links directly to the settings page
@@ -59,7 +58,7 @@ FastTrMail is a Chrome Manifest V3 extension built specifically for Fastmail Web
 
 ## Provider Credentials
 
-If you use `Google Web (no key)` or `Microsoft Edge (no key)`, you can skip credential setup.
+If you use `Google Web (no key)`, you can skip credential setup.
 
 ### Google
 

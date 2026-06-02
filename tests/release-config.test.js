@@ -28,6 +28,19 @@ test("manifest grants host permissions for both Google translation endpoints", (
   );
 });
 
+test("manifest does not keep edge-web review-risk permissions", () => {
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+
+  assert.ok(
+    !manifest.permissions.includes("declarativeNetRequest"),
+    "edge-web transport should not require declarativeNetRequest"
+  );
+  assert.ok(
+    !manifest.host_permissions.includes("https://edge.microsoft.com/*"),
+    "edge-web auth host permission should be removed"
+  );
+});
+
 test("manifest does not request redundant Fastmail host permissions", () => {
   const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
 
@@ -129,4 +142,5 @@ test("background bootstrap loads shared dependencies before background modules",
     "shared/entities.js",
     "background/request-registry.js"
   ]);
+  assert.equal(modulePaths.includes("background/edge-auth.js"), false);
 });
