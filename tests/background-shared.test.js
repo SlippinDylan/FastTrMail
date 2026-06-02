@@ -5,6 +5,7 @@ const { createBackgroundApp } = require("./helpers/background-harness.js");
 
 const SHARED_MODULES = [
   "shared/catalog.js",
+  "shared/i18n.js",
   "shared/entities.js",
   "background/request-registry.js",
   "background/shared.js"
@@ -43,4 +44,23 @@ test("getJwtExpiry falls back to a near-future timestamp when the token payload 
 
   assert.ok(expiresAt >= before);
   assert.ok(expiresAt <= after);
+});
+
+test("createErrorResponse preserves structured metadata for UI-side diagnostics", () => {
+  const { background } = createBackgroundApp({ modulePaths: SHARED_MODULES });
+  const error = background.createError(background.ERROR_CODES.MICROSOFT_UNAVAILABLE, {
+    metadata: {
+      provider: "microsoft",
+      upstreamMessage: "The subscription key is invalid."
+    }
+  });
+
+  assert.deepEqual(toPlainData(background.createErrorResponse(error)), {
+    ok: false,
+    errorCode: "microsoft_unavailable",
+    metadata: {
+      provider: "microsoft",
+      upstreamMessage: "The subscription key is invalid."
+    }
+  });
 });

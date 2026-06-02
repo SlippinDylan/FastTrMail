@@ -5,7 +5,7 @@
     BUTTON_CLASS,
     MESSAGE_INSTANCE_ATTRIBUTE,
     SEGMENT_ATTRIBUTE,
-    TRANSLATE_ICON
+    TRANSLATE_ICON_SVG
   } = app.constants;
   const { threadStates } = app.state;
   const {
@@ -142,9 +142,8 @@
     button.style.position = "relative";
     button.style.width = "32px";
     button.style.height = "32px";
-    button.setAttribute("aria-label", "翻译");
-    button.setAttribute("title", "翻译");
-    button.innerHTML = TRANSLATE_ICON;
+    button.innerHTML = `${TRANSLATE_ICON_SVG}<span class="label"></span>`;
+    updateButtonState(button, false);
     button.addEventListener("click", onTranslateClick);
     return button;
   }
@@ -396,8 +395,13 @@
 
   function updateButtonState(button, isActive) {
     withObserverMuted(() => {
-      button.setAttribute("title", isActive ? "恢复原文" : "翻译");
-      button.setAttribute("aria-label", isActive ? "恢复原文" : "翻译");
+      const label = app.i18n.t(isActive ? "content.restoreOriginal" : "content.translate");
+      button.setAttribute("title", label);
+      button.setAttribute("aria-label", label);
+      const labelNode = button.querySelector(".label");
+      if (labelNode instanceof HTMLElement) {
+        labelNode.textContent = label;
+      }
       button.classList.toggle(BUTTON_ACTIVE_CLASS, isActive);
     });
   }

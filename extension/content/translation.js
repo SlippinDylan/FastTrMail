@@ -23,6 +23,7 @@
     }
 
     threadState.processing = true;
+    threadState.uiLocale = await app.i18n.refreshLocale();
     const runToken = app.runtime.beginThreadRun(threadState);
     app.debug.log("translation", "refresh-thread-start", {
       runToken,
@@ -89,7 +90,7 @@
 
     if (titleState.sourceText === titleText && titleState.status === "translating") {
       if (app.runtime.isRunCurrent(threadState, runToken)) {
-        app.render.renderTitleTranslation(threadRoot, titleElement, "翻译中…", "loading");
+        app.render.renderTitleTranslation(threadRoot, titleElement, app.i18n.t("content.loading", null, threadState.uiLocale), "loading");
       }
       return;
     }
@@ -102,7 +103,7 @@
     titleState.requestId = requestId;
 
     if (app.runtime.isRunCurrent(threadState, runToken)) {
-      app.render.renderTitleTranslation(threadRoot, titleElement, "翻译中…", "loading");
+      app.render.renderTitleTranslation(threadRoot, titleElement, app.i18n.t("content.loading", null, threadState.uiLocale), "loading");
     }
 
     app.debug.log("translation", "translate-thread-title-start", {
@@ -125,7 +126,7 @@
       });
 
       if (!response?.ok) {
-        throw new Error(response?.error || "Title translation failed.");
+        throw new Error(app.i18n.resolveErrorMessage(response, threadState.uiLocale));
       }
 
       const translatedTitle = Array.isArray(response.result?.translatedSegments)
@@ -133,7 +134,7 @@
         : "";
 
       if (!translatedTitle) {
-        throw new Error("标题翻译结果为空。");
+        throw new Error(app.i18n.t("content.titleTranslationEmpty", null, threadState.uiLocale));
       }
 
       if (!isTitleRequestCurrent(threadState, requestId, titleText)) {
@@ -162,7 +163,9 @@
         return;
       }
 
-      const message = error instanceof Error ? error.message : "标题翻译失败。";
+      const message = error instanceof Error && error.message
+        ? error.message
+        : app.i18n.t("content.titleTranslationFailed", null, threadState.uiLocale);
       threadState.title.translatedText = "";
       threadState.title.status = "error";
       threadState.title.error = message;
@@ -210,7 +213,7 @@
         }
 
         messageState.status = "pending-body";
-        messageState.error = "无法定位邮件正文。";
+        messageState.error = app.i18n.t("content.bodyNotFound", null, threadState.uiLocale);
         app.render.renderMessageStatus(descriptor, messageState.error, "error");
         continue;
       }
@@ -218,7 +221,7 @@
       const segments = app.segments.collectTranslatableSegments(contentRoot);
       if (segments.length === 0) {
         messageState.status = "no-segments";
-        messageState.error = "未找到可翻译内容。";
+        messageState.error = app.i18n.t("content.noSegments", null, threadState.uiLocale);
         app.render.renderMessageStatus(descriptor, messageState.error, "error");
         continue;
       }
@@ -315,7 +318,7 @@
       });
 
       if (!response?.ok) {
-        throw new Error(response?.error || "Translation failed.");
+        throw new Error(app.i18n.resolveErrorMessage(response, threadState.uiLocale));
       }
 
       const translatedSegments = Array.isArray(response.result?.translatedSegments)
@@ -323,7 +326,7 @@
         : [];
 
       if (translatedSegments.length !== segments.length) {
-        throw new Error("分段翻译结果数量不匹配。");
+        throw new Error(app.i18n.t("content.segmentCountMismatch", null, threadState.uiLocale));
       }
 
       if (!app.runtime.isRunCurrent(threadState, runToken)) {
@@ -380,11 +383,13 @@
       }
 
       messageState.status = "render-pending";
-      messageState.error = "页面正在更新，翻译结果将自动重试。";
+      messageState.error = app.i18n.t("content.pendingBody", null, threadState.uiLocale);
       requestThreadRetry(threadRoot, threadState, descriptor);
     } catch (error) {
       messageState.status = "error";
-      messageState.error = error instanceof Error ? error.message : "Unknown error";
+      messageState.error = error instanceof Error && error.message
+        ? error.message
+        : app.i18n.getErrorMessage(app.i18n.runtime.ERROR_CODES.TRANSLATION_REQUEST_FAILED, threadState.uiLocale);
 
       const liveBodyElement = resolveRenderableMessageElements(threadRoot, threadState, descriptor).body
         || renderElements.body;
@@ -415,8 +420,8 @@
     const retryDecision = registerRenderRetryAttempt(messageState.renderRetryState);
     if (!retryDecision.shouldRetry) {
       messageState.status = "error";
-      messageState.error = retryDecision.message;
-      app.render.renderMessageStatus(descriptor, retryDecision.message, "error");
+      messageState.error = app.i18n.t(retryDecision.messageKey, null, threadState.uiLocale);
+      app.render.renderMessageStatus(descriptor, messageState.error, "error");
       return;
     }
 
@@ -426,7 +431,7 @@
       retryDecision.delayMs
     );
     messageState.status = "render-pending";
-    messageState.error = "页面正在更新，翻译结果将自动重试。";
+    messageState.error = app.i18n.t("content.pendingBody", null, threadState.uiLocale);
     app.render.renderMessageStatus(descriptor, messageState.error, "info");
   }
 

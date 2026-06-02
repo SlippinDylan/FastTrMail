@@ -6,6 +6,7 @@ const repoRoot = path.resolve(__dirname, "..", "..");
 
 const DEFAULT_MODULE_PATHS = [
   "shared/catalog.js",
+  "shared/i18n.js",
   "shared/entities.js",
   "background/request-registry.js",
   "background/shared.js",

@@ -11,6 +11,9 @@
 
   function initialize() {
     app.thread.injectButtons(document, onTranslateClick);
+    void app.i18n.refreshLocale().then(() => {
+      app.thread.injectButtons(document, onTranslateClick);
+    });
 
     const observer = new MutationObserver((mutations) => {
       if (app.state.observerMuteDepth > 0) {

@@ -1,6 +1,7 @@
 (function initBackgroundProviders(scope) {
   const ns = scope.FastTrMailBackground;
   const GOOGLE_WEB_SEGMENT_CONCURRENCY = 4;
+  const { ERROR_CODES } = ns;
 
   ns.handleTranslateRequest = async function handleTranslateRequest(message) {
     const requestId = typeof message.requestId === "string" ? message.requestId.trim() : "";
@@ -11,7 +12,7 @@
       const languageDefinition = ns.getLanguageDefinition(settings.targetLanguage);
 
       if (!languageDefinition) {
-        throw new Error("不支持当前目标语言。");
+        throw ns.createError(ERROR_CODES.UNSUPPORTED_TARGET_LANGUAGE);
       }
 
       const segments = Array.isArray(message.segments)
@@ -29,7 +30,7 @@
 
       const text = typeof message.text === "string" ? message.text.trim() : "";
       if (!text) {
-        throw new Error("没有找到可翻译的邮件正文。");
+        throw ns.createError(ERROR_CODES.EMPTY_TRANSLATABLE_TEXT);
       }
 
       if (settings.provider === "google-web") {
@@ -104,7 +105,7 @@
     const data = await response.json().catch(() => null);
 
     if (!response.ok || !Array.isArray(data)) {
-      throw new Error("Google Web 翻译请求失败，请稍后重试或切换到正式 API。");
+      throw ns.createError(ERROR_CODES.GOOGLE_WEB_UNAVAILABLE);
     }
 
     const translatedText = Array.isArray(data[0])
@@ -115,7 +116,7 @@
       : "";
 
     if (!translatedText) {
-      throw new Error("Google Web 翻译返回为空，请切换到正式 API。");
+      throw ns.createError(ERROR_CODES.GOOGLE_WEB_UNAVAILABLE);
     }
 
     return {
@@ -129,7 +130,7 @@
 
   ns.translateWithGoogleApi = async function translateWithGoogleApi(text, settings, languageDefinition, signal) {
     if (!settings.googleApiKey) {
-      throw new Error("Google Cloud API Key 未配置，请先到设置页填写。");
+      throw ns.createError(ERROR_CODES.GOOGLE_API_KEY_MISSING);
     }
 
     const endpoint = new URL("https://translation.googleapis.com/language/translate/v2");
@@ -151,13 +152,17 @@
     const data = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      const message = data?.error?.message || "Google Cloud 翻译请求失败。";
-      throw new Error(message);
+      throw ns.createError(ERROR_CODES.GOOGLE_API_UNAVAILABLE, {
+        metadata: {
+          provider: "google-api",
+          upstreamMessage: data?.error?.message || ""
+        }
+      });
     }
 
     const translatedText = data?.data?.translations?.[0]?.translatedText;
     if (!translatedText) {
-      throw new Error("Google Cloud 翻译返回为空。");
+      throw ns.createError(ERROR_CODES.GOOGLE_API_UNAVAILABLE);
     }
 
     return {
@@ -182,11 +187,11 @@
 
   ns.translateWithMicrosoft = async function translateWithMicrosoft(text, settings, languageDefinition, signal) {
     if (!settings.microsoftApiKey) {
-      throw new Error("Microsoft Translator API Key 未配置，请先到设置页填写。");
+      throw ns.createError(ERROR_CODES.MICROSOFT_API_KEY_MISSING);
     }
 
     if (!settings.microsoftRegion) {
-      throw new Error("Microsoft Translator Region 未配置，请先到设置页填写。");
+      throw ns.createError(ERROR_CODES.MICROSOFT_REGION_MISSING);
     }
 
     const endpoint = new URL("https://api.cognitive.microsofttranslator.com/translate");
@@ -207,16 +212,17 @@
     const data = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      const message =
-        data?.error?.message ||
-        data?.message ||
-        "Microsoft 翻译请求失败。";
-      throw new Error(message);
+      throw ns.createError(ERROR_CODES.MICROSOFT_UNAVAILABLE, {
+        metadata: {
+          provider: "microsoft",
+          upstreamMessage: data?.error?.message || data?.message || ""
+        }
+      });
     }
 
     const translatedText = data?.[0]?.translations?.[0]?.text;
     if (!translatedText) {
-      throw new Error("Microsoft 翻译返回为空。");
+      throw ns.createError(ERROR_CODES.MICROSOFT_UNAVAILABLE);
     }
 
     return {
@@ -230,7 +236,7 @@
 
   ns.translateSegmentsWithGoogleApi = async function translateSegmentsWithGoogleApi(segments, settings, languageDefinition, signal) {
     if (!settings.googleApiKey) {
-      throw new Error("Google Cloud API Key 未配置，请先到设置页填写。");
+      throw ns.createError(ERROR_CODES.GOOGLE_API_KEY_MISSING);
     }
 
     const endpoint = new URL("https://translation.googleapis.com/language/translate/v2");
@@ -252,8 +258,12 @@
     const data = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      const message = data?.error?.message || "Google Cloud 翻译请求失败。";
-      throw new Error(message);
+      throw ns.createError(ERROR_CODES.GOOGLE_API_UNAVAILABLE, {
+        metadata: {
+          provider: "google-api",
+          upstreamMessage: data?.error?.message || ""
+        }
+      });
     }
 
     const translatedSegments = Array.isArray(data?.data?.translations)
@@ -261,7 +271,7 @@
       : [];
 
     if (translatedSegments.length !== segments.length) {
-      throw new Error("Google Cloud 分段翻译结果数量不匹配。");
+      throw ns.createError(ERROR_CODES.GOOGLE_API_UNAVAILABLE);
     }
 
     return {
@@ -275,11 +285,11 @@
 
   ns.translateSegmentsWithMicrosoft = async function translateSegmentsWithMicrosoft(segments, settings, languageDefinition, signal) {
     if (!settings.microsoftApiKey) {
-      throw new Error("Microsoft Translator API Key 未配置，请先到设置页填写。");
+      throw ns.createError(ERROR_CODES.MICROSOFT_API_KEY_MISSING);
     }
 
     if (!settings.microsoftRegion) {
-      throw new Error("Microsoft Translator Region 未配置，请先到设置页填写。");
+      throw ns.createError(ERROR_CODES.MICROSOFT_REGION_MISSING);
     }
 
     const endpoint = new URL("https://api.cognitive.microsofttranslator.com/translate");
@@ -300,11 +310,12 @@
     const data = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      const message =
-        data?.error?.message ||
-        data?.message ||
-        "Microsoft 翻译请求失败。";
-      throw new Error(message);
+      throw ns.createError(ERROR_CODES.MICROSOFT_UNAVAILABLE, {
+        metadata: {
+          provider: "microsoft",
+          upstreamMessage: data?.error?.message || data?.message || ""
+        }
+      });
     }
 
     const translatedSegments = Array.isArray(data)
@@ -312,7 +323,7 @@
       : [];
 
     if (translatedSegments.length !== segments.length) {
-      throw new Error("Microsoft 分段翻译结果数量不匹配。");
+      throw ns.createError(ERROR_CODES.MICROSOFT_UNAVAILABLE);
     }
 
     return {
@@ -343,11 +354,12 @@
     const data = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      const message =
-        data?.error?.message ||
-        data?.message ||
-        "Microsoft Edge 免 Key 翻译请求失败。";
-      throw new Error(message);
+      throw ns.createError(ERROR_CODES.EDGE_WEB_UNAVAILABLE, {
+        metadata: {
+          provider: "edge-web",
+          upstreamMessage: data?.error?.message || data?.message || ""
+        }
+      });
     }
 
     const translatedSegments = Array.isArray(data)
@@ -355,7 +367,7 @@
       : [];
 
     if (translatedSegments.length !== segments.length) {
-      throw new Error("Microsoft Edge 分段翻译结果数量不匹配。");
+      throw ns.createError(ERROR_CODES.EDGE_WEB_UNAVAILABLE);
     }
 
     return {

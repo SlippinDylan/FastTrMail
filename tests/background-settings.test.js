@@ -9,6 +9,7 @@ function toPlainData(value) {
 
 const SETTINGS_MODULES = [
   "shared/catalog.js",
+  "shared/i18n.js",
   "shared/entities.js",
   "background/request-registry.js",
   "background/shared.js",
@@ -33,6 +34,7 @@ test("installDefaultSettings repairs missing and unsupported stored settings", a
   assert.deepEqual(toPlainData(writes), [{
     provider: catalog.DEFAULT_SETTINGS.provider,
     targetLanguage: catalog.DEFAULT_SETTINGS.targetLanguage,
+    uiLanguage: catalog.DEFAULT_SETTINGS.uiLanguage,
     googleApiKey: "key",
     microsoftApiKey: "",
     microsoftRegion: ""

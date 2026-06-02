@@ -188,13 +188,14 @@
 
   function renderLoadingTranslations(segments) {
     const result = createRenderResult(segments.length);
+    const loadingText = app.i18n.t("content.loading");
 
     for (const segment of segments) {
       let translationNode = findInlineTranslationNode(segment);
       if (!translationNode) {
         translationNode = insertTranslationNode(segment, {
           state: "loading",
-          content: "翻译中…"
+          content: loadingText
         });
       }
 
@@ -209,7 +210,7 @@
 
       const didUpdate = setInlineTranslationState(translationNode, {
         state: "loading",
-        content: "翻译中…",
+        content: loadingText,
         sourceElement: getSegmentSourceElement(segment)
       });
 

@@ -6,6 +6,7 @@ const catalog = require("../extension/shared/catalog.js");
 test("default settings point to a supported provider and language", () => {
   assert.ok(catalog.PROVIDERS.some((provider) => provider.id === catalog.DEFAULT_SETTINGS.provider));
   assert.ok(catalog.LANGUAGES.some((language) => language.id === catalog.DEFAULT_SETTINGS.targetLanguage));
+  assert.equal(catalog.DEFAULT_SETTINGS.uiLanguage, "auto");
 });
 
 test("provider labels and language labels are derived from the shared catalog", () => {
@@ -20,6 +21,7 @@ test("normalizeSettings falls back to supported defaults and trims credential fi
     catalog.normalizeSettings({
       provider: "unsupported-provider",
       targetLanguage: "unsupported-language",
+      uiLanguage: "unsupported-ui-language",
       googleApiKey: " key ",
       microsoftApiKey: 123,
       microsoftRegion: " eastasia "
@@ -27,6 +29,7 @@ test("normalizeSettings falls back to supported defaults and trims credential fi
     {
       provider: catalog.DEFAULT_SETTINGS.provider,
       targetLanguage: catalog.DEFAULT_SETTINGS.targetLanguage,
+      uiLanguage: catalog.DEFAULT_SETTINGS.uiLanguage,
       googleApiKey: "key",
       microsoftApiKey: "",
       microsoftRegion: "eastasia"

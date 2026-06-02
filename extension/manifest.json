@@ -39,6 +39,7 @@
         "https://app.fastmail.com/*"
       ],
       "js": [
+        "shared/i18n.js",
         "content/shared.js",
         "content/policies.js",
         "content/retry-policy.js",

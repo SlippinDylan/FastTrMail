@@ -20,7 +20,7 @@ test("render retry policy backs off and terminates after the configured budget",
 
   const terminal = retryPolicy.registerRenderRetryAttempt(state);
   assert.equal(terminal.shouldRetry, false);
-  assert.match(terminal.message, /页面结构/);
+  assert.equal(terminal.messageKey, retryPolicy.TERMINAL_RENDER_ERROR_KEY);
 });
 
 test("render retry policy reset clears accumulated attempts", () => {

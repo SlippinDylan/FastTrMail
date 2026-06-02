@@ -45,7 +45,7 @@ test("handleTranslateRequest rejects empty text payloads", async () => {
 
   await assert.rejects(
     background.handleTranslateRequest({ text: "   " }),
-    /没有找到可翻译的邮件正文/
+    (error) => error?.code === "empty_translatable_text"
   );
 });
 

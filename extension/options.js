@@ -1,5 +1,6 @@
 (function initOptionsPage(scope) {
   const { DEFAULT_SETTINGS, LANGUAGES, PROVIDERS, normalizeSettings } = scope.FastTrMailCatalog;
+  const i18n = scope.FastTrMailI18n;
 
   function collectPageElements(documentRef = scope.document) {
     if (!documentRef || typeof documentRef.getElementById !== "function") {
@@ -8,6 +9,7 @@
 
     const elements = {
       form: documentRef.getElementById("settings-form"),
+      uiLanguageSelect: documentRef.getElementById("uiLanguage"),
       providerSelect: documentRef.getElementById("provider"),
       targetLanguageSelect: documentRef.getElementById("targetLanguage"),
       googlePanel: documentRef.getElementById("google-provider-panel"),
@@ -54,36 +56,68 @@
     setPanelVisibility(elements.microsoftPanel, state.microsoftVisible);
   }
 
-  function populateLanguageOptions(selectNode) {
-    const fragment = scope.document.createDocumentFragment();
-
-    for (const language of LANGUAGES) {
-      const option = scope.document.createElement("option");
-      option.value = language.id;
-      option.textContent = language.label;
-      fragment.appendChild(option);
+  function clearNodeChildren(node) {
+    if (!node) {
+      return;
     }
 
-    selectNode.appendChild(fragment);
+    if (typeof node.innerHTML === "string") {
+      node.innerHTML = "";
+    }
+
+    if (Array.isArray(node.children)) {
+      node.children.length = 0;
+    }
   }
 
-  function populateProviderOptions(selectNode) {
-    selectNode.innerHTML = "";
+  function populateSelectOptions(selectNode, options, documentRef = scope.document) {
+    const selectedValue = selectNode.value;
+    clearNodeChildren(selectNode);
 
-    const fragment = scope.document.createDocumentFragment();
+    const fragment = documentRef.createDocumentFragment();
 
-    for (const provider of PROVIDERS) {
-      const option = scope.document.createElement("option");
-      option.value = provider.id;
-      option.textContent = provider.label;
+    for (const optionDefinition of options) {
+      const option = documentRef.createElement("option");
+      option.value = optionDefinition.id;
+      option.textContent = optionDefinition.label;
       fragment.appendChild(option);
     }
 
     selectNode.appendChild(fragment);
+    if (options.some((option) => option.id === selectedValue)) {
+      selectNode.value = selectedValue;
+    }
+  }
+
+  function getResolvedLocale(uiLanguage) {
+    return i18n.resolveUiLanguage(uiLanguage);
+  }
+
+  function renderLocalizedPage(settings, elements = pageElements) {
+    if (!elements) {
+      return;
+    }
+
+    const locale = getResolvedLocale(settings.uiLanguage);
+
+    i18n.applyDocumentLanguage(scope.document, locale);
+    scope.document.title = i18n.t(locale, "options.documentTitle");
+    i18n.applyTranslations(scope.document, locale);
+
+    populateSelectOptions(elements.uiLanguageSelect, i18n.getUiLanguageOptions(locale));
+    populateSelectOptions(elements.providerSelect, i18n.getProviderOptions(locale, PROVIDERS));
+    populateSelectOptions(elements.targetLanguageSelect, i18n.getTargetLanguageOptions(locale, LANGUAGES));
+
+    elements.uiLanguageSelect.value = settings.uiLanguage;
+    elements.providerSelect.value = settings.provider;
+    elements.targetLanguageSelect.value = settings.targetLanguage;
+
+    syncProviderFields(settings.provider, elements);
   }
 
   function readSettingsFromForm(elements = pageElements) {
     return normalizeSettings({
+      uiLanguage: elements.uiLanguageSelect.value,
       provider: elements.providerSelect.value,
       targetLanguage: elements.targetLanguageSelect.value,
       googleApiKey: elements.googleApiKeyInput.value.trim(),
@@ -93,28 +127,23 @@
   }
 
   async function initialize(elements = pageElements) {
-    populateProviderOptions(elements.providerSelect);
-    populateLanguageOptions(elements.targetLanguageSelect);
-
     const stored = await scope.chrome.storage.local.get(Object.keys(DEFAULT_SETTINGS));
     const settings = normalizeSettings(stored);
 
-    elements.providerSelect.value = settings.provider;
-    elements.targetLanguageSelect.value = settings.targetLanguage;
     elements.googleApiKeyInput.value = settings.googleApiKey;
     elements.microsoftApiKeyInput.value = settings.microsoftApiKey;
     elements.microsoftRegionInput.value = settings.microsoftRegion;
 
-    syncProviderFields(settings.provider, elements);
+    renderLocalizedPage(settings, elements);
   }
 
-  function setStatus(message, state, elements = pageElements) {
+  function setStatus(messageKey, state, elements = pageElements, locale = getResolvedLocale(elements?.uiLanguageSelect?.value || DEFAULT_SETTINGS.uiLanguage)) {
     const statusNode = elements?.statusNode;
     if (!statusNode) {
       return;
     }
 
-    statusNode.textContent = message;
+    statusNode.textContent = i18n.t(locale, messageKey);
     statusNode.dataset.state = state;
 
     if (state !== "success") {
@@ -122,7 +151,7 @@
     }
 
     scope.window.setTimeout(() => {
-      if (statusNode.textContent === message && statusNode.dataset.state === state) {
+      if (statusNode.dataset.state === state) {
         statusNode.textContent = "";
         statusNode.dataset.state = "";
       }
@@ -132,16 +161,27 @@
   async function handleSubmit(event, elements = pageElements) {
     event.preventDefault();
 
+    const settings = readSettingsFromForm(elements);
+    const locale = getResolvedLocale(settings.uiLanguage);
+
     try {
-      const settings = readSettingsFromForm(elements);
       await scope.chrome.storage.local.set(settings);
-      setStatus("设置已保存。", "success", elements);
-    } catch (error) {
-      setStatus(error instanceof Error ? error.message : "设置保存失败。", "error", elements);
+      setStatus("options.saved", "success", elements, locale);
+    } catch (_error) {
+      setStatus("options.saveFailed", "error", elements, locale);
     }
   }
 
+  function handleUiLanguageChange(elements = pageElements) {
+    const settings = readSettingsFromForm(elements);
+    renderLocalizedPage(settings, elements);
+  }
+
   function bindPageEvents(elements = pageElements) {
+    elements.uiLanguageSelect.addEventListener("change", () => {
+      handleUiLanguageChange(elements);
+    });
+
     elements.providerSelect.addEventListener("change", () => {
       syncProviderFields(elements.providerSelect.value, elements);
     });
@@ -156,8 +196,10 @@
     getProviderPanelState,
     syncProviderFields,
     readSettingsFromForm,
+    renderLocalizedPage,
     initialize,
     handleSubmit,
+    handleUiLanguageChange,
     setStatus
   };
 
@@ -165,8 +207,12 @@
 
   if (pageElements) {
     bindPageEvents(pageElements);
-    initialize(pageElements).catch((error) => {
-      setStatus(error instanceof Error ? error.message : "设置页初始化失败。", "error", pageElements);
+    initialize(pageElements).catch(() => {
+      const locale = getResolvedLocale(DEFAULT_SETTINGS.uiLanguage);
+      i18n.applyDocumentLanguage(scope.document, locale);
+      scope.document.title = i18n.t(locale, "options.documentTitle");
+      i18n.applyTranslations(scope.document, locale);
+      setStatus("options.loadFailed", "error", pageElements, locale);
     });
   }
 

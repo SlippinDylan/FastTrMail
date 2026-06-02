@@ -1,6 +1,6 @@
 (function initRetryPolicy(scope) {
   const RENDER_RETRY_DELAYS_MS = Object.freeze([120, 320, 800]);
-  const TERMINAL_RENDER_ERROR = "页面结构持续变化，已停止自动重试。请稍后手动重试。";
+  const TERMINAL_RENDER_ERROR_KEY = "content.renderRetryStopped";
 
   function createRenderRetryState() {
     return {
@@ -18,7 +18,7 @@
     if (attemptIndex >= RENDER_RETRY_DELAYS_MS.length) {
       return {
         shouldRetry: false,
-        message: TERMINAL_RENDER_ERROR,
+        messageKey: TERMINAL_RENDER_ERROR_KEY,
         attemptCount: state.attemptCount
       };
     }
@@ -46,7 +46,7 @@
 
   const api = {
     RENDER_RETRY_DELAYS_MS,
-    TERMINAL_RENDER_ERROR,
+    TERMINAL_RENDER_ERROR_KEY,
     createRenderRetryState,
     registerRenderRetryAttempt,
     resetRenderRetryState

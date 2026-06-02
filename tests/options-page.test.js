@@ -53,10 +53,11 @@ function createElement(tagName = "div") {
 function createDocument() {
   const nodes = {
     "settings-form": createElement("form"),
+    uiLanguage: createElement("select"),
     provider: createElement("select"),
     targetLanguage: createElement("select"),
-    "google-card": createElement("section"),
-    "microsoft-card": createElement("section"),
+    "google-provider-panel": createElement("section"),
+    "microsoft-provider-panel": createElement("section"),
     googleApiKey: createElement("input"),
     microsoftApiKey: createElement("input"),
     microsoftRegion: createElement("input"),
@@ -65,8 +66,15 @@ function createDocument() {
 
   return {
     nodes,
+    title: "",
+    documentElement: {
+      lang: ""
+    },
     getElementById(id) {
       return nodes[id] || null;
+    },
+    querySelectorAll() {
+      return [];
     },
     createElement(tagName) {
       return createElement(tagName);
@@ -110,6 +118,7 @@ function loadOptionsPage() {
 
   sandbox.globalThis = sandbox;
   loadExtensionScript("shared/catalog.js", sandbox);
+  loadExtensionScript("shared/i18n.js", sandbox);
   loadExtensionScript("options.js", sandbox);
 
   return sandbox.FastTrMailOptionsPage || sandbox.module.exports;
@@ -156,8 +165,7 @@ test("options markup keeps one settings card and a standalone save action row", 
   const optionsHtml = fs.readFileSync(optionsHtmlPath, "utf8");
 
   assert.match(optionsHtml, /<section class="card settings-card">/);
-  assert.doesNotMatch(optionsHtml, /id="google-card"/);
-  assert.doesNotMatch(optionsHtml, /id="microsoft-card"/);
+  assert.match(optionsHtml, /id="uiLanguage"/);
   assert.match(optionsHtml, /<div class="page-actions">/);
 });
 
@@ -174,4 +182,25 @@ test("options page grid keeps cards content-sized instead of stretching to viewp
   const optionsCss = fs.readFileSync(optionsCssPath, "utf8");
 
   assert.match(optionsCss, /\.page\s*\{[\s\S]*align-content:\s*start;/);
+});
+
+test("readSettingsFromForm includes uiLanguage and normalizes unsupported values", () => {
+  const page = loadOptionsPage();
+  const elements = {
+    uiLanguageSelect: { value: "unsupported" },
+    providerSelect: { value: "google-web" },
+    targetLanguageSelect: { value: "en" },
+    googleApiKeyInput: { value: " key " },
+    microsoftApiKeyInput: { value: " secret " },
+    microsoftRegionInput: { value: " eastasia " }
+  };
+
+  assert.deepEqual(toPlainData(page.readSettingsFromForm(elements)), {
+    uiLanguage: "auto",
+    provider: "google-web",
+    targetLanguage: "en",
+    googleApiKey: "key",
+    microsoftApiKey: "secret",
+    microsoftRegion: "eastasia"
+  });
 });

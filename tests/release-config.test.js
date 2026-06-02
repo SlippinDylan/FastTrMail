@@ -100,8 +100,8 @@ test("options and popup load the shared catalog before their page scripts", () =
   const optionsHtml = fs.readFileSync(optionsHtmlPath, "utf8");
   const popupHtml = fs.readFileSync(popupHtmlPath, "utf8");
 
-  assert.match(optionsHtml, /<script src="shared\/catalog\.js"><\/script>\s*<script src="options\.js"><\/script>/);
-  assert.match(popupHtml, /<script src="shared\/catalog\.js"><\/script>\s*<script src="popup\.js"><\/script>/);
+  assert.match(optionsHtml, /<script src="shared\/catalog\.js"><\/script>\s*<script src="shared\/i18n\.js"><\/script>\s*<script src="options\.js"><\/script>/);
+  assert.match(popupHtml, /<script src="shared\/catalog\.js"><\/script>\s*<script src="shared\/i18n\.js"><\/script>\s*<script src="popup\.js"><\/script>/);
 });
 
 test("README files cross-link languages and document Fastmail-only scope plus license", () => {
@@ -123,8 +123,9 @@ test("background bootstrap loads shared dependencies before background modules",
   assert.ok(modulePathsMatch, "background bootstrap should declare module load order");
 
   const modulePaths = Array.from(modulePathsMatch[1].matchAll(/"([^"]+)"/g)).map((match) => match[1]);
-  assert.deepEqual(modulePaths.slice(0, 3), [
+  assert.deepEqual(modulePaths.slice(0, 4), [
     "shared/catalog.js",
+    "shared/i18n.js",
     "shared/entities.js",
     "background/request-registry.js"
   ]);

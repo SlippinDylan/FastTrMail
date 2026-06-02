@@ -71,7 +71,7 @@ test("handleMessage maps aborted translations to a cancelled response", async ()
   assert.deepEqual(toPlainData(payload), {
     ok: false,
     cancelled: true,
-    error: "翻译请求已取消。"
+    errorCode: "translation_cancelled"
   });
 });
 
@@ -107,11 +107,11 @@ test("handleMessage falls back to stable error messages for non-Error failures",
 
   assert.deepEqual(toPlainData(translatePayload), {
     ok: false,
-    error: "翻译请求失败。"
+    errorCode: "translation_request_failed"
   });
   assert.deepEqual(toPlainData(settingsPayload), {
     ok: false,
-    error: "读取设置失败。"
+    errorCode: "settings_read_failed"
   });
 });
 

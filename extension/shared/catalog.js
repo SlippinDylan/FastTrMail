@@ -23,12 +23,14 @@
   const DEFAULT_SETTINGS = {
     provider: "google-web",
     targetLanguage: "zh-CN",
+    uiLanguage: "auto",
     googleApiKey: "",
     microsoftApiKey: "",
     microsoftRegion: ""
   };
   const PROVIDER_IDS = new Set(PROVIDERS.map((provider) => provider.id));
   const LANGUAGE_IDS = new Set(LANGUAGES.map((language) => language.id));
+  const UI_LANGUAGE_IDS = new Set(["auto", "zh-CN", "en", "zh-TW", "zh-HK"]);
 
   const PROVIDER_LABELS = Object.freeze(
     Object.fromEntries(PROVIDERS.map((provider) => [provider.id, provider.label]))
@@ -48,6 +50,7 @@
     return {
       provider: PROVIDER_IDS.has(source.provider) ? source.provider : DEFAULT_SETTINGS.provider,
       targetLanguage: LANGUAGE_IDS.has(source.targetLanguage) ? source.targetLanguage : DEFAULT_SETTINGS.targetLanguage,
+      uiLanguage: UI_LANGUAGE_IDS.has(source.uiLanguage) ? source.uiLanguage : DEFAULT_SETTINGS.uiLanguage,
       googleApiKey: normalizeOptionalText(source.googleApiKey),
       microsoftApiKey: normalizeOptionalText(source.microsoftApiKey),
       microsoftRegion: normalizeOptionalText(source.microsoftRegion)

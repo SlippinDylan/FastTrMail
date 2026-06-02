@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="en">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -10,32 +10,33 @@
     <main class="popup">
       <section class="popup-card">
         <div class="popup-header">
-          <img class="popup-icon" src="icons/app.png" alt="扩展图标">
+          <img class="popup-icon" src="icons/app.png" alt="" data-i18n-alt="shared.iconAlt">
           <div>
-            <h1>FastTrMail</h1>
-            <p>网页邮箱正文翻译助手</p>
+            <h1 data-i18n-text="shared.appName">FastTrMail</h1>
+            <p data-i18n-text="popup.subtitle">网页邮箱正文翻译助手</p>
           </div>
         </div>
 
         <div class="summary">
           <div class="summary-row">
-            <span class="summary-label">当前 Provider</span>
+            <span class="summary-label" data-i18n-text="popup.currentProvider">当前 Provider</span>
             <span id="current-provider" class="summary-value">加载中</span>
           </div>
           <div class="summary-row">
-            <span class="summary-label">当前目标语言</span>
+            <span class="summary-label" data-i18n-text="popup.currentTargetLanguage">当前目标语言</span>
             <span id="current-language" class="summary-value">加载中</span>
           </div>
         </div>
 
         <div class="popup-actions">
-          <button id="open-options" type="button">打开设置</button>
+          <button id="open-options" type="button" data-i18n-text="popup.openSettings">打开设置</button>
         </div>
 
-        <p class="tip">进入邮件详情页后，点击邮件右上操作区里的“翻译”按钮即可。</p>
+        <p class="tip" data-i18n-text="popup.tip">进入邮件详情页后，点击邮件右上操作区里的“翻译”按钮即可。</p>
       </section>
     </main>
     <script src="shared/catalog.js"></script>
+    <script src="shared/i18n.js"></script>
     <script src="popup.js"></script>
   </body>
 </html>

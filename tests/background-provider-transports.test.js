@@ -102,7 +102,7 @@ test("translateSegmentsWithGoogleApi rejects mismatched segment counts", async (
       { googleApiKey: "api-key" },
       background.getLanguageDefinition("zh-CN")
     ),
-    /数量不匹配/
+    (error) => error?.code === "google_api_unavailable"
   );
 });
 
@@ -129,6 +129,6 @@ test("translateWithMicrosoft surfaces upstream service error messages", async ()
       },
       background.getLanguageDefinition("zh-CN")
     ),
-    /bad key/
+    (error) => error?.code === "microsoft_unavailable"
   );
 });

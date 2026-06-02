@@ -22,7 +22,7 @@
     }
 
     if (!ns.isJwtLikeToken(token)) {
-      throw new Error("Microsoft Edge 认证 Token 获取失败。");
+      throw ns.createError(ns.ERROR_CODES.EDGE_WEB_UNAVAILABLE);
     }
 
     ns.edgeAuthCache = {
@@ -53,7 +53,7 @@
       return (await response.text()).trim();
     } catch (error) {
       if (error?.name === "AbortError") {
-        throw new Error("Microsoft Edge 认证超时。");
+        throw ns.createError(ns.ERROR_CODES.EDGE_WEB_UNAVAILABLE, { cause: error });
       }
       throw error;
     } finally {

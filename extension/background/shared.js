@@ -1,16 +1,18 @@
 (function initBackgroundShared(scope) {
   const ns = scope.FastTrMailBackground || (scope.FastTrMailBackground = {});
   const catalog = scope.FastTrMailCatalog;
+  const i18n = scope.FastTrMailI18n;
   const entities = scope.FastTrMailEntities;
   const requestRegistryApi = scope.FastTrMailRequestRegistry;
 
-  if (!catalog || !entities || !requestRegistryApi) {
+  if (!catalog || !i18n || !entities || !requestRegistryApi) {
     throw new Error("FastTrMail shared dependencies failed to load.");
   }
 
   ns.DEFAULT_SETTINGS = { ...catalog.DEFAULT_SETTINGS };
   ns.PROVIDER_LABELS = { ...catalog.PROVIDER_LABELS };
   ns.normalizeSettings = catalog.normalizeSettings;
+  ns.ERROR_CODES = { ...i18n.ERROR_CODES };
 
   ns.EDGE_AUTH_URL = "https://edge.microsoft.com/translate/auth";
   ns.EDGE_TRANSLATE_URL = "https://api.cognitive.microsofttranslator.com/translate";
@@ -75,5 +77,53 @@
     );
 
     return results;
+  };
+
+  ns.createError = function createError(code, { cause, message, metadata } = {}) {
+    const error = cause instanceof Error
+      ? cause
+      : new Error(typeof message === "string" && message ? message : code);
+
+    error.code = code;
+
+    if (typeof message === "string" && message) {
+      error.message = message;
+    }
+
+    if (metadata && typeof metadata === "object") {
+      error.metadata = { ...metadata };
+    }
+
+    return error;
+  };
+
+  ns.getErrorCode = function getErrorCode(error, fallbackCode = ns.ERROR_CODES.TRANSLATION_REQUEST_FAILED) {
+    if (error?.name === "AbortError") {
+      return ns.ERROR_CODES.TRANSLATION_CANCELLED;
+    }
+
+    if (typeof error?.code === "string" && error.code) {
+      return error.code;
+    }
+
+    return fallbackCode;
+  };
+
+  ns.createErrorResponse = function createErrorResponse(error, fallbackCode) {
+    const errorCode = ns.getErrorCode(error, fallbackCode);
+    const response = {
+      ok: false,
+      errorCode
+    };
+
+    if (errorCode === ns.ERROR_CODES.TRANSLATION_CANCELLED) {
+      response.cancelled = true;
+    }
+
+    if (error?.metadata && typeof error.metadata === "object") {
+      response.metadata = { ...error.metadata };
+    }
+
+    return response;
   };
 })(self);
