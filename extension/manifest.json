@@ -8,8 +8,8 @@
     "declarativeNetRequest"
   ],
   "host_permissions": [
-    "https://app.fastmail.com/*",
     "https://edge.microsoft.com/*",
+    "https://translate.googleapis.com/*",
     "https://translation.googleapis.com/*",
     "https://api.cognitive.microsofttranslator.com/*"
   ],
@@ -40,6 +40,9 @@
       ],
       "js": [
         "content/shared.js",
+        "content/policies.js",
+        "content/retry-policy.js",
+        "content/retry-state-guard.js",
         "content/runtime.js",
         "content/thread.js",
         "content/segments.js",

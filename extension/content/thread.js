@@ -404,6 +404,7 @@
 
   function findBodyElement(messageNode) {
     const { extractBodyText } = app.segments;
+    const { isCandidateBodyText, isExplicitBodyText } = app.policies;
 
     if (!(messageNode instanceof HTMLElement)) {
       return null;
@@ -421,7 +422,7 @@
         ? messageNode
         : messageNode.querySelector(selector);
 
-      if (found instanceof HTMLElement && extractBodyText(found).length > 20) {
+      if (found instanceof HTMLElement && isExplicitBodyText(extractBodyText(found))) {
         return found;
       }
     }
@@ -439,7 +440,7 @@
       }
 
       const text = extractBodyText(candidate);
-      if (text.length < 40) {
+      if (!isCandidateBodyText(text)) {
         continue;
       }
 

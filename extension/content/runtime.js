@@ -34,6 +34,8 @@
       refreshTimer: 0,
       processing: false,
       pendingRefresh: false,
+      pendingRefreshDelayMs: 0,
+      pendingRequestIds: new Set(),
       title: createTitleState()
     };
   }
@@ -46,6 +48,8 @@
       status: "idle",
       segmentSignature: "",
       translatedSegments: null,
+      requestSerial: 0,
+      renderRetryState: app.retryPolicy.createRenderRetryState(),
       error: ""
     };
   }
@@ -89,10 +93,12 @@
     }
 
     clearRefreshTimer(threadState);
+    cancelPendingThreadRequests(threadState);
     threadState.active = false;
     threadState.cancelled = true;
     threadState.processing = false;
     threadState.pendingRefresh = false;
+    threadState.pendingRefreshDelayMs = 0;
     threadState.runId += 1;
     app.state.activeThreadStates.delete(threadState);
     app.debug.log("runtime", "deactivate-thread-state", {
@@ -110,6 +116,41 @@
       if (messageState.status === "translating") {
         messageState.status = Array.isArray(messageState.translatedSegments) ? "translated" : "idle";
         messageState.error = "";
+      }
+    }
+  }
+
+  function trackThreadRequest(threadState, requestId) {
+    if (!threadState || !requestId) {
+      return;
+    }
+
+    threadState.pendingRequestIds.add(requestId);
+  }
+
+  function releaseThreadRequest(threadState, requestId) {
+    if (!threadState || !requestId) {
+      return;
+    }
+
+    threadState.pendingRequestIds.delete(requestId);
+  }
+
+  function cancelPendingThreadRequests(threadState) {
+    if (!threadState?.pendingRequestIds || threadState.pendingRequestIds.size === 0) {
+      return;
+    }
+
+    const requestIds = Array.from(threadState.pendingRequestIds);
+    threadState.pendingRequestIds.clear();
+
+    for (const requestId of requestIds) {
+      try {
+        void chrome.runtime.sendMessage({
+          type: "cancel-translation",
+          requestId
+        });
+      } catch (_error) {
       }
     }
   }
@@ -178,6 +219,9 @@
     clearRefreshTimer,
     activateThreadState,
     deactivateThreadState,
+    trackThreadRequest,
+    releaseThreadRequest,
+    cancelPendingThreadRequests,
     isThreadStateCurrent,
     beginThreadRun,
     isRunCurrent,

@@ -1,6 +1,8 @@
 (() => {
   const app = globalThis.FastTrMailContent;
   const { normalizeTranslationText, summarizeText } = app.utils;
+  const { resetRenderRetryState, registerRenderRetryAttempt } = app.retryPolicy;
+  const { syncRetryStateForSignature, prepareForFreshTranslation } = globalThis.FastTrMailRetryStateGuard;
 
   async function refreshThread(threadRoot, threadState) {
     if (!(threadRoot instanceof HTMLElement) || !threadRoot.isConnected) {
@@ -55,8 +57,10 @@
       });
 
       if (threadState.pendingRefresh && threadState.active && !threadState.cancelled) {
+        const delayMs = threadState.pendingRefreshDelayMs || 0;
         threadState.pendingRefresh = false;
-        app.controller.scheduleThreadRefresh(threadRoot, { immediate: true });
+        threadState.pendingRefreshDelayMs = 0;
+        app.controller.scheduleThreadRefresh(threadRoot, { delayMs });
       }
     }
   }
@@ -110,9 +114,13 @@
   }
 
   async function translateThreadTitle(threadRoot, threadState, runToken, requestId, titleText) {
+    const backgroundRequestId = `title:${threadState.key}:${runToken.runId}:${requestId}`;
+    app.runtime.trackThreadRequest(threadState, backgroundRequestId);
+
     try {
       const response = await chrome.runtime.sendMessage({
         type: "translate-email",
+        requestId: backgroundRequestId,
         segments: [titleText]
       });
 
@@ -172,6 +180,8 @@
         titlePreview: summarizeText(titleText),
         error: message
       });
+    } finally {
+      app.runtime.releaseThreadRequest(threadState, backgroundRequestId);
     }
   }
 
@@ -217,6 +227,8 @@
       descriptor.segments = segments;
       descriptor.segmentSignature = segmentSignature;
 
+      syncRetryStateForSignature(messageState, segmentSignature);
+
       if (
         Array.isArray(messageState.translatedSegments) &&
         messageState.translatedSegments.length === segments.length &&
@@ -227,7 +239,7 @@
         messageState.error = renderResult.ok ? "" : "cached-render-failed";
 
         if (!renderResult.ok) {
-          requestThreadRetry(threadRoot, threadState);
+          requestThreadRetry(threadRoot, threadState, descriptor);
         }
         continue;
       }
@@ -270,12 +282,13 @@
     const renderElements = resolveRenderableMessageElements(threadRoot, threadState, descriptor);
     if (!(renderElements.body instanceof HTMLElement)) {
       messageState.status = "pending-body";
-      requestThreadRetry(threadRoot, threadState);
+      requestThreadRetry(threadRoot, threadState, descriptor);
       return;
     }
 
     messageState.status = "translating";
     messageState.error = "";
+    prepareForFreshTranslation(messageState);
     app.render.clearMessageStatus(descriptor);
     app.render.removeInlineTranslations(renderElements.body);
     app.debug.log("translation", "translate-message-start", {
@@ -286,15 +299,18 @@
 
     const loadingRenderResult = app.render.renderLoadingTranslations(segments);
     if (!loadingRenderResult.ok) {
-      messageState.status = "render-pending";
-      messageState.error = "正在等待页面稳定后重试渲染。";
-      app.render.renderMessageStatus(descriptor, messageState.error, "info");
-      threadState.pendingRefresh = true;
+      requestThreadRetry(threadRoot, threadState, descriptor);
     }
 
+    const requestSerial = messageState.requestSerial + 1;
+    const backgroundRequestId = `message:${descriptor.key}:${runToken.runId}:${requestSerial}`;
+
     try {
+      messageState.requestSerial = requestSerial;
+      app.runtime.trackThreadRequest(threadState, backgroundRequestId);
       const response = await chrome.runtime.sendMessage({
         type: "translate-email",
+        requestId: backgroundRequestId,
         segments: segments.map((segment) => segment.text)
       });
 
@@ -330,13 +346,12 @@
       const liveContentRoot = liveElements.contentRoot;
 
       if (!(liveBodyElement instanceof HTMLElement) && descriptor.messageNode instanceof HTMLElement) {
-        messageState.status = "render-pending";
-        requestThreadRetry(threadRoot, threadState);
+        requestThreadRetry(threadRoot, threadState, descriptor);
         return;
       }
 
       if (!(liveBodyElement instanceof HTMLElement) || !(liveContentRoot instanceof HTMLElement)) {
-        messageState.status = "render-pending";
+        requestThreadRetry(threadRoot, threadState, descriptor);
         return;
       }
 
@@ -348,6 +363,7 @@
           if (renderResult.ok) {
             messageState.status = "translated";
             messageState.error = "";
+            resetRenderRetryState(messageState.renderRetryState);
             app.render.clearMessageStatus(descriptor);
             app.debug.log("translation", "translate-message-success", {
               messageKey: descriptor.key,
@@ -358,16 +374,14 @@
 
           messageState.status = "render-pending";
           messageState.error = "render-failed";
-          app.render.renderMessageStatus(descriptor, "页面正在更新，翻译结果将自动重试。", "info");
-          requestThreadRetry(threadRoot, threadState, false);
+          requestThreadRetry(threadRoot, threadState, descriptor);
           return;
         }
       }
 
       messageState.status = "render-pending";
       messageState.error = "页面正在更新，翻译结果将自动重试。";
-      app.render.renderMessageStatus(descriptor, messageState.error, "info");
-      requestThreadRetry(threadRoot, threadState);
+      requestThreadRetry(threadRoot, threadState, descriptor);
     } catch (error) {
       messageState.status = "error";
       messageState.error = error instanceof Error ? error.message : "Unknown error";
@@ -380,22 +394,40 @@
         const errorRenderResult = app.render.renderSegmentError(segments, messageState.error);
         if (!errorRenderResult.ok) {
           app.render.renderMessageStatus(descriptor, messageState.error, "error");
-          requestThreadRetry(threadRoot, threadState, false);
+          requestThreadRetry(threadRoot, threadState, descriptor);
         }
       }
       app.debug.log("translation", "translate-message-error", {
         messageKey: descriptor.key,
         error: messageState.error
       });
+    } finally {
+      app.runtime.releaseThreadRequest(threadState, backgroundRequestId);
     }
   }
 
-  function requestThreadRetry(threadRoot, threadState, scheduleImmediately = true) {
-    threadState.pendingRefresh = true;
-
-    if (scheduleImmediately) {
-      app.controller.scheduleThreadRefresh(threadRoot, { immediate: true });
+  function requestThreadRetry(threadRoot, threadState, descriptor) {
+    const messageState = descriptor?.state;
+    if (!messageState) {
+      return;
     }
+
+    const retryDecision = registerRenderRetryAttempt(messageState.renderRetryState);
+    if (!retryDecision.shouldRetry) {
+      messageState.status = "error";
+      messageState.error = retryDecision.message;
+      app.render.renderMessageStatus(descriptor, retryDecision.message, "error");
+      return;
+    }
+
+    threadState.pendingRefresh = true;
+    threadState.pendingRefreshDelayMs = Math.max(
+      threadState.pendingRefreshDelayMs || 0,
+      retryDecision.delayMs
+    );
+    messageState.status = "render-pending";
+    messageState.error = "页面正在更新，翻译结果将自动重试。";
+    app.render.renderMessageStatus(descriptor, messageState.error, "info");
   }
 
   function clearThreadTranslations(threadRoot) {

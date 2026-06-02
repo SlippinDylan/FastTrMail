@@ -3,52 +3,74 @@
   const GOOGLE_WEB_SEGMENT_CONCURRENCY = 4;
 
   ns.handleTranslateRequest = async function handleTranslateRequest(message) {
-    const settings = await ns.getSettings();
-    const languageDefinition = ns.getLanguageDefinition(settings.targetLanguage);
+    const requestId = typeof message.requestId === "string" ? message.requestId.trim() : "";
+    const requestEntry = requestId ? ns.requestRegistry.register(requestId) : null;
 
-    if (!languageDefinition) {
-      throw new Error("不支持当前目标语言。");
+    try {
+      const settings = await ns.getSettings();
+      const languageDefinition = ns.getLanguageDefinition(settings.targetLanguage);
+
+      if (!languageDefinition) {
+        throw new Error("不支持当前目标语言。");
+      }
+
+      const segments = Array.isArray(message.segments)
+        ? message.segments.map((item) => (typeof item === "string" ? item.trim() : "")).filter(Boolean)
+        : [];
+
+      if (segments.length > 0) {
+        return ns.handleSegmentTranslateRequest(
+          segments,
+          settings,
+          languageDefinition,
+          requestEntry?.signal
+        );
+      }
+
+      const text = typeof message.text === "string" ? message.text.trim() : "";
+      if (!text) {
+        throw new Error("没有找到可翻译的邮件正文。");
+      }
+
+      if (settings.provider === "google-web") {
+        return ns.translateWithGoogleWeb(text, languageDefinition, requestEntry?.signal);
+      }
+
+      if (settings.provider === "edge-web") {
+        return ns.translateWithEdgeWeb(text, languageDefinition, requestEntry?.signal);
+      }
+
+      if (settings.provider === "microsoft") {
+        return ns.translateWithMicrosoft(text, settings, languageDefinition, requestEntry?.signal);
+      }
+
+      return ns.translateWithGoogleApi(text, settings, languageDefinition, requestEntry?.signal);
+    } finally {
+      if (requestId) {
+        ns.requestRegistry.finalize(requestId);
+      }
     }
-
-    const segments = Array.isArray(message.segments)
-      ? message.segments.map((item) => (typeof item === "string" ? item.trim() : "")).filter(Boolean)
-      : [];
-
-    if (segments.length > 0) {
-      return ns.handleSegmentTranslateRequest(segments, settings, languageDefinition);
-    }
-
-    const text = typeof message.text === "string" ? message.text.trim() : "";
-    if (!text) {
-      throw new Error("没有找到可翻译的邮件正文。");
-    }
-
-    if (settings.provider === "google-web") {
-      return ns.translateWithGoogleWeb(text, languageDefinition);
-    }
-
-    if (settings.provider === "edge-web") {
-      return ns.translateWithEdgeWeb(text, languageDefinition);
-    }
-
-    if (settings.provider === "microsoft") {
-      return ns.translateWithMicrosoft(text, settings, languageDefinition);
-    }
-
-    return ns.translateWithGoogleApi(text, settings, languageDefinition);
   };
 
-  ns.handleSegmentTranslateRequest = async function handleSegmentTranslateRequest(segments, settings, languageDefinition) {
+  ns.cancelTranslateRequest = function cancelTranslateRequest(requestId) {
+    if (typeof requestId !== "string" || !requestId.trim()) {
+      return false;
+    }
+
+    return ns.requestRegistry.cancel(requestId.trim());
+  };
+
+  ns.handleSegmentTranslateRequest = async function handleSegmentTranslateRequest(segments, settings, languageDefinition, signal) {
     if (settings.provider === "google-web") {
       const translatedSegments = await ns.mapWithConcurrency(
         segments,
         GOOGLE_WEB_SEGMENT_CONCURRENCY,
-        async (segment) => ns.translateWithGoogleWeb(segment, languageDefinition)
+        async (segment) => ns.translateWithGoogleWeb(segment, languageDefinition, signal)
       );
 
       return {
         provider: "google-web",
-        providerLabel: "Google Web（免 Key）",
+        providerLabel: ns.PROVIDER_LABELS["google-web"],
         targetLanguage: languageDefinition.id,
         targetLanguageLabel: languageDefinition.label,
         translatedSegments: translatedSegments.map((item) => item.translatedText)
@@ -56,17 +78,17 @@
     }
 
     if (settings.provider === "edge-web") {
-      return ns.translateSegmentsWithEdgeWeb(segments, languageDefinition);
+      return ns.translateSegmentsWithEdgeWeb(segments, languageDefinition, signal);
     }
 
     if (settings.provider === "microsoft") {
-      return ns.translateSegmentsWithMicrosoft(segments, settings, languageDefinition);
+      return ns.translateSegmentsWithMicrosoft(segments, settings, languageDefinition, signal);
     }
 
-    return ns.translateSegmentsWithGoogleApi(segments, settings, languageDefinition);
+    return ns.translateSegmentsWithGoogleApi(segments, settings, languageDefinition, signal);
   };
 
-  ns.translateWithGoogleWeb = async function translateWithGoogleWeb(text, languageDefinition) {
+  ns.translateWithGoogleWeb = async function translateWithGoogleWeb(text, languageDefinition, signal) {
     const endpoint = new URL("https://translate.googleapis.com/translate_a/single");
     endpoint.searchParams.set("client", "gtx");
     endpoint.searchParams.set("sl", "auto");
@@ -75,7 +97,8 @@
     endpoint.searchParams.set("q", text);
 
     const response = await fetch(endpoint.toString(), {
-      method: "GET"
+      method: "GET",
+      signal
     });
 
     const data = await response.json().catch(() => null);
@@ -97,14 +120,14 @@
 
     return {
       provider: "google-web",
-      providerLabel: "Google Web（免 Key）",
+      providerLabel: ns.PROVIDER_LABELS["google-web"],
       targetLanguage: languageDefinition.id,
       targetLanguageLabel: languageDefinition.label,
       translatedText: ns.decodeHtmlEntities(translatedText)
     };
   };
 
-  ns.translateWithGoogleApi = async function translateWithGoogleApi(text, settings, languageDefinition) {
+  ns.translateWithGoogleApi = async function translateWithGoogleApi(text, settings, languageDefinition, signal) {
     if (!settings.googleApiKey) {
       throw new Error("Google Cloud API Key 未配置，请先到设置页填写。");
     }
@@ -114,6 +137,7 @@
 
     const response = await fetch(endpoint.toString(), {
       method: "POST",
+      signal,
       headers: {
         "Content-Type": "application/json"
       },
@@ -138,15 +162,15 @@
 
     return {
       provider: "google-api",
-      providerLabel: "Google Cloud API",
+      providerLabel: ns.PROVIDER_LABELS["google-api"],
       targetLanguage: languageDefinition.id,
       targetLanguageLabel: languageDefinition.label,
       translatedText: ns.decodeHtmlEntities(translatedText)
     };
   };
 
-  ns.translateWithEdgeWeb = async function translateWithEdgeWeb(text, languageDefinition) {
-    const result = await ns.translateSegmentsWithEdgeWeb([text], languageDefinition);
+  ns.translateWithEdgeWeb = async function translateWithEdgeWeb(text, languageDefinition, signal) {
+    const result = await ns.translateSegmentsWithEdgeWeb([text], languageDefinition, signal);
     return {
       provider: result.provider,
       providerLabel: result.providerLabel,
@@ -156,7 +180,7 @@
     };
   };
 
-  ns.translateWithMicrosoft = async function translateWithMicrosoft(text, settings, languageDefinition) {
+  ns.translateWithMicrosoft = async function translateWithMicrosoft(text, settings, languageDefinition, signal) {
     if (!settings.microsoftApiKey) {
       throw new Error("Microsoft Translator API Key 未配置，请先到设置页填写。");
     }
@@ -171,6 +195,7 @@
 
     const response = await fetch(endpoint.toString(), {
       method: "POST",
+      signal,
       headers: {
         "Content-Type": "application/json",
         "Ocp-Apim-Subscription-Key": settings.microsoftApiKey,
@@ -196,14 +221,14 @@
 
     return {
       provider: "microsoft",
-      providerLabel: "Microsoft Translator",
+      providerLabel: ns.PROVIDER_LABELS.microsoft,
       targetLanguage: languageDefinition.id,
       targetLanguageLabel: languageDefinition.label,
       translatedText
     };
   };
 
-  ns.translateSegmentsWithGoogleApi = async function translateSegmentsWithGoogleApi(segments, settings, languageDefinition) {
+  ns.translateSegmentsWithGoogleApi = async function translateSegmentsWithGoogleApi(segments, settings, languageDefinition, signal) {
     if (!settings.googleApiKey) {
       throw new Error("Google Cloud API Key 未配置，请先到设置页填写。");
     }
@@ -213,6 +238,7 @@
 
     const response = await fetch(endpoint.toString(), {
       method: "POST",
+      signal,
       headers: {
         "Content-Type": "application/json"
       },
@@ -240,14 +266,14 @@
 
     return {
       provider: "google-api",
-      providerLabel: "Google Cloud API",
+      providerLabel: ns.PROVIDER_LABELS["google-api"],
       targetLanguage: languageDefinition.id,
       targetLanguageLabel: languageDefinition.label,
       translatedSegments
     };
   };
 
-  ns.translateSegmentsWithMicrosoft = async function translateSegmentsWithMicrosoft(segments, settings, languageDefinition) {
+  ns.translateSegmentsWithMicrosoft = async function translateSegmentsWithMicrosoft(segments, settings, languageDefinition, signal) {
     if (!settings.microsoftApiKey) {
       throw new Error("Microsoft Translator API Key 未配置，请先到设置页填写。");
     }
@@ -262,6 +288,7 @@
 
     const response = await fetch(endpoint.toString(), {
       method: "POST",
+      signal,
       headers: {
         "Content-Type": "application/json",
         "Ocp-Apim-Subscription-Key": settings.microsoftApiKey,
@@ -290,14 +317,14 @@
 
     return {
       provider: "microsoft",
-      providerLabel: "Microsoft Translator",
+      providerLabel: ns.PROVIDER_LABELS.microsoft,
       targetLanguage: languageDefinition.id,
       targetLanguageLabel: languageDefinition.label,
       translatedSegments
     };
   };
 
-  ns.translateSegmentsWithEdgeWeb = async function translateSegmentsWithEdgeWeb(segments, languageDefinition) {
+  ns.translateSegmentsWithEdgeWeb = async function translateSegmentsWithEdgeWeb(segments, languageDefinition, signal) {
     const token = await ns.getEdgeAuthToken();
     const endpoint = new URL(ns.EDGE_TRANSLATE_URL);
     endpoint.searchParams.set("api-version", "3.0");
@@ -305,6 +332,7 @@
 
     const response = await fetch(endpoint.toString(), {
       method: "POST",
+      signal,
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`
@@ -332,7 +360,7 @@
 
     return {
       provider: "edge-web",
-      providerLabel: "Microsoft Edge（免 Key）",
+      providerLabel: ns.PROVIDER_LABELS["edge-web"],
       targetLanguage: languageDefinition.id,
       targetLanguageLabel: languageDefinition.label,
       translatedSegments

@@ -5,6 +5,7 @@
     SEGMENT_ANCHOR_CLASS,
     SEGMENT_ATTRIBUTE
   } = app.constants;
+  const { hasTranslatableText } = app.policies;
   const { nextSegmentId, normalizeKeyText, withObserverMuted } = app.utils;
 
   function collectTranslatableSegments(bodyElement) {
@@ -606,19 +607,6 @@
     }
 
     return lastNode;
-  }
-
-  function hasTranslatableText(text) {
-    const compact = String(text).replace(/\s+/g, " ").trim();
-    if (compact.length < 2) {
-      return false;
-    }
-
-    if (/^https?:\/\/\S+$/i.test(compact)) {
-      return false;
-    }
-
-    return /[A-Za-z\u00C0-\u024F\u0400-\u04FF\u3040-\u30FF\uAC00-\uD7AF]/.test(compact);
   }
 
   app.segments = {

@@ -2,12 +2,14 @@
   const ns = scope.FastTrMailBackground;
 
   ns.installDefaultSettings = async function installDefaultSettings() {
-    const current = await chrome.storage.local.get(Object.keys(ns.DEFAULT_SETTINGS));
+    const keys = Object.keys(ns.DEFAULT_SETTINGS);
+    const current = await chrome.storage.local.get(keys);
+    const normalized = ns.normalizeSettings(current);
     const nextSettings = {};
 
-    for (const [key, value] of Object.entries(ns.DEFAULT_SETTINGS)) {
-      if (typeof current[key] === "undefined") {
-        nextSettings[key] = value;
+    for (const key of keys) {
+      if (current[key] !== normalized[key]) {
+        nextSettings[key] = normalized[key];
       }
     }
 
@@ -18,7 +20,7 @@
 
   ns.getSettings = async function getSettings() {
     const stored = await chrome.storage.local.get(Object.keys(ns.DEFAULT_SETTINGS));
-    return { ...ns.DEFAULT_SETTINGS, ...stored };
+    return ns.normalizeSettings(stored);
   };
 
   ns.getLanguageDefinition = function getLanguageDefinition(languageId) {

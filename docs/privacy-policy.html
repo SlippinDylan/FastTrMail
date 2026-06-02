@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>FastTrMail Privacy Policy</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f6f7fb;
+        --card: #ffffff;
+        --text: #172033;
+        --muted: #5f6b85;
+        --line: #d9dfeb;
+        --accent: #1f6feb;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: linear-gradient(180deg, #eef4ff 0%, var(--bg) 220px);
+        color: var(--text);
+      }
+
+      main {
+        max-width: 860px;
+        margin: 0 auto;
+        padding: 48px 20px 72px;
+      }
+
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        padding: 32px;
+        box-shadow: 0 18px 60px rgba(23, 32, 51, 0.08);
+      }
+
+      h1,
+      h2 {
+        margin: 0 0 16px;
+        line-height: 1.2;
+      }
+
+      h1 {
+        font-size: 2rem;
+      }
+
+      h2 {
+        margin-top: 32px;
+        font-size: 1.2rem;
+      }
+
+      p,
+      li {
+        color: var(--muted);
+        line-height: 1.7;
+      }
+
+      ul {
+        padding-left: 20px;
+      }
+
+      a {
+        color: var(--accent);
+      }
+
+      .meta {
+        margin-bottom: 24px;
+        font-size: 0.95rem;
+        color: var(--muted);
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <article class="card">
+        <h1>FastTrMail Privacy Policy</h1>
+        <p class="meta">Effective date: 2026-06-02</p>
+
+        <p>
+          FastTrMail is a Chrome extension that adds inline translation to Fastmail web message views.
+          This policy explains what data the extension handles and how that data is used.
+        </p>
+
+        <h2>Summary</h2>
+        <ul>
+          <li>FastTrMail does not collect personal data on developer-controlled servers.</li>
+          <li>FastTrMail only sends email content to the translation service you choose.</li>
+          <li>API keys are stored locally in your browser and are not sent to the developer.</li>
+          <li>FastTrMail does not sell data.</li>
+          <li>FastTrMail does not use data for advertising, profiling, or marketing.</li>
+        </ul>
+
+        <h2>What the extension accesses</h2>
+        <p>
+          When you use FastTrMail on Fastmail Web, the extension reads the visible email title and
+          message body content needed to produce a translation in the page.
+        </p>
+
+        <h2>What data is sent to third parties</h2>
+        <p>
+          If you request a translation, FastTrMail sends the text you choose to translate to the
+          translation provider currently selected in the extension settings. Depending on your
+          configuration, that provider may be Google or Microsoft.
+        </p>
+        <p>
+          The developer of FastTrMail does not receive a copy of the email content being translated.
+        </p>
+
+        <h2>What data is stored locally</h2>
+        <p>FastTrMail stores the following settings locally in Chrome storage on your device:</p>
+        <ul>
+          <li>Selected translation provider</li>
+          <li>Selected target language</li>
+          <li>Google API key, if you provide one</li>
+          <li>Microsoft API key and region, if you provide them</li>
+        </ul>
+        <p>
+          This information is used only to make the extension work. It is not transmitted to the
+          developer.
+        </p>
+
+        <h2>Data sharing and sale</h2>
+        <p>
+          FastTrMail does not sell user data. It does not share user data with data brokers,
+          advertisers, or analytics platforms. Data is only sent to the translation provider you
+          explicitly use for the core translation function.
+        </p>
+
+        <h2>Security</h2>
+        <p>
+          FastTrMail uses HTTPS requests for supported translation providers. API keys are stored
+          locally in Chrome storage on your device.
+        </p>
+
+        <h2>Your choices</h2>
+        <p>
+          You can remove stored settings at any time by clearing the extension's local storage or by
+          uninstalling the extension. You can also stop sending email content to a provider by not
+          using the translation feature.
+        </p>
+
+        <h2>Contact</h2>
+        <p>
+          For questions about this policy, please open an issue on the project repository:
+          <a href="https://github.com/SlippinDylan/FastTrMail/issues">github.com/SlippinDylan/FastTrMail/issues</a>
+        </p>
+      </article>
+    </main>
+  </body>
+</html>

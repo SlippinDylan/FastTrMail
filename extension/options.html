@@ -19,7 +19,7 @@
       </section>
 
       <form id="settings-form" class="form">
-        <section class="card">
+        <section class="card settings-card">
           <div class="card-header">
             <h2>总设置</h2>
             <p>这里决定扩展默认使用哪个翻译服务，以及翻译成哪种目标语言。</p>
@@ -27,13 +27,48 @@
 
           <label class="field">
             <span>翻译服务 Provider</span>
-            <select id="provider" name="provider">
-              <option value="google-web">Google Web（免 Key）</option>
-              <option value="edge-web">Microsoft Edge（免 Key）</option>
-              <option value="google-api">Google Cloud API</option>
-              <option value="microsoft">Microsoft Translator API</option>
-            </select>
+            <select id="provider" name="provider"></select>
           </label>
+
+          <section id="google-provider-panel" class="provider-panel" hidden aria-hidden="true">
+            <div class="provider-panel-header">
+              <h3>Google Cloud API 配置</h3>
+              <p>如果总设置里选择了 Google Cloud API，这里的 API Key 就会被用于翻译请求。</p>
+            </div>
+
+            <label class="field">
+              <span>Google Cloud Translation API Key</span>
+              <input id="googleApiKey" name="googleApiKey" type="password" autocomplete="off" spellcheck="false" placeholder="填入你的 Google Cloud API Key">
+            </label>
+
+            <div class="link-row">
+              <a class="link-button" href="https://docs.cloud.google.com/translate/docs/setup" target="_blank" rel="noreferrer">官方开通说明</a>
+              <a class="link-button" href="https://cloud.google.com/api-keys/docs/create-manage-api-keys" target="_blank" rel="noreferrer">官方 API Key 管理</a>
+              <a class="link-button" href="https://console.cloud.google.com/apis/library/translate.googleapis.com" target="_blank" rel="noreferrer">打开 Google API 控制台</a>
+            </div>
+          </section>
+
+          <section id="microsoft-provider-panel" class="provider-panel" hidden aria-hidden="true">
+            <div class="provider-panel-header">
+              <h3>Microsoft API 配置</h3>
+              <p>如果总设置里选择了 Microsoft Translator API，这里的 Key 和 Region 会用于翻译请求。</p>
+            </div>
+
+            <label class="field">
+              <span>Microsoft Translator API Key</span>
+              <input id="microsoftApiKey" name="microsoftApiKey" type="password" autocomplete="off" spellcheck="false" placeholder="填入你的 Microsoft Translator API Key">
+            </label>
+
+            <label class="field">
+              <span>Microsoft Translator Region</span>
+              <input id="microsoftRegion" name="microsoftRegion" type="text" placeholder="例如 eastasia 或 global" autocomplete="off" spellcheck="false">
+            </label>
+
+            <div class="link-row">
+              <a class="link-button" href="https://learn.microsoft.com/en-us/azure/ai-services/translator/text-translation/quickstart/rest-api" target="_blank" rel="noreferrer">官方申请与快速开始</a>
+              <a class="link-button" href="https://portal.azure.com/" target="_blank" rel="noreferrer">打开 Azure Portal</a>
+            </div>
+          </section>
 
           <label class="field">
             <span>目标语言 Target language</span>
@@ -41,54 +76,13 @@
           </label>
         </section>
 
-        <section id="google-card" class="card provider-card">
-          <div class="card-header">
-            <h2>Google Cloud API 配置</h2>
-            <p>如果总设置里选择了 Google Cloud API，这里的 API Key 就会被用于翻译请求。</p>
-          </div>
-
-          <label class="field">
-            <span>Google Cloud Translation API Key</span>
-            <input id="googleApiKey" name="googleApiKey" type="password" autocomplete="off" spellcheck="false" placeholder="填入你的 Google Cloud API Key">
-          </label>
-
-          <div class="link-row">
-            <a class="link-button" href="https://docs.cloud.google.com/translate/docs/setup" target="_blank" rel="noreferrer">官方开通说明</a>
-            <a class="link-button" href="https://cloud.google.com/api-keys/docs/create-manage-api-keys" target="_blank" rel="noreferrer">官方 API Key 管理</a>
-            <a class="link-button" href="https://console.cloud.google.com/apis/library/translate.googleapis.com" target="_blank" rel="noreferrer">打开 Google API 控制台</a>
-          </div>
-        </section>
-
-        <section id="microsoft-card" class="card provider-card">
-          <div class="card-header">
-            <h2>Microsoft API 配置</h2>
-            <p>如果总设置里选择了 Microsoft Translator API，这里的 Key 和 Region 会用于翻译请求。</p>
-          </div>
-
-          <label class="field">
-            <span>Microsoft Translator API Key</span>
-            <input id="microsoftApiKey" name="microsoftApiKey" type="password" autocomplete="off" spellcheck="false" placeholder="填入你的 Microsoft Translator API Key">
-          </label>
-
-          <label class="field">
-            <span>Microsoft Translator Region</span>
-            <input id="microsoftRegion" name="microsoftRegion" type="text" placeholder="例如 eastasia 或 global" autocomplete="off" spellcheck="false">
-          </label>
-
-          <div class="link-row">
-            <a class="link-button" href="https://learn.microsoft.com/en-us/azure/ai-services/translator/text-translation/quickstart/rest-api" target="_blank" rel="noreferrer">官方申请与快速开始</a>
-            <a class="link-button" href="https://portal.azure.com/" target="_blank" rel="noreferrer">打开 Azure Portal</a>
-          </div>
-        </section>
-
-        <section class="card actions-card">
-          <div class="actions">
-            <button type="submit">保存设置</button>
-            <span id="status" class="status" role="status" aria-live="polite"></span>
-          </div>
-        </section>
+        <div class="page-actions">
+          <span id="status" class="status" role="status" aria-live="polite"></span>
+          <button type="submit">保存设置</button>
+        </div>
       </form>
     </main>
+    <script src="shared/catalog.js"></script>
     <script src="options.js"></script>
   </body>
 </html>

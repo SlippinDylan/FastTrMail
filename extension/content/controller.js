@@ -144,7 +144,7 @@
     scheduleThreadRefresh(threadRoot, { immediate: true });
   }
 
-  function scheduleThreadRefresh(threadRoot, { immediate = false } = {}) {
+  function scheduleThreadRefresh(threadRoot, { immediate = false, delayMs } = {}) {
     if (!(threadRoot instanceof HTMLElement)) {
       return;
     }
@@ -175,7 +175,11 @@
       return;
     }
 
-    const delay = immediate ? 0 : 80;
+    const delay = typeof delayMs === "number"
+      ? Math.max(0, delayMs)
+      : immediate
+        ? 0
+        : 80;
     app.debug.log("controller", "schedule-thread-refresh", {
       delay,
       thread: app.thread.describeThread(threadRoot, state)

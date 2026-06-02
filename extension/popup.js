@@ -1,30 +1,14 @@
-const PROVIDER_LABELS = {
-  "google-web": "Google Web（免 Key）",
-  "edge-web": "Microsoft Edge（免 Key）",
-  "google-api": "Google Cloud API",
-  microsoft: "Microsoft Translator API"
-};
-
-const LANGUAGE_LABELS = {
-  "zh-CN": "简体中文",
-  "zh-TW": "繁體中文",
-  en: "English",
-  ja: "日本語",
-  ko: "한국어",
-  fr: "Français",
-  de: "Deutsch",
-  es: "Español",
-  it: "Italiano",
-  pt: "Português",
-  ru: "Русский"
-};
+const { PROVIDER_LABELS, LANGUAGE_LABELS, DEFAULT_SETTINGS, normalizeSettings } = globalThis.FastTrMailCatalog;
 
 document.getElementById("open-options").addEventListener("click", async () => {
   await chrome.runtime.openOptionsPage();
   window.close();
 });
 
-initialize();
+initialize().catch(() => {
+  document.getElementById("current-provider").textContent = "读取失败";
+  document.getElementById("current-language").textContent = "读取失败";
+});
 
 async function initialize() {
   const stored = await chrome.storage.local.get([
@@ -32,8 +16,12 @@ async function initialize() {
     "targetLanguage"
   ]);
 
-  const provider = stored.provider || "google-web";
-  const language = stored.targetLanguage || "zh-CN";
+  const settings = normalizeSettings({
+    ...DEFAULT_SETTINGS,
+    ...stored
+  });
+  const provider = settings.provider;
+  const language = settings.targetLanguage;
 
   document.getElementById("current-provider").textContent =
     PROVIDER_LABELS[provider] || provider;

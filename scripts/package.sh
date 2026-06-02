@@ -16,7 +16,10 @@ cp -R "$ROOT_DIR/extension/." "$PACKAGE_DIR/"
 find "$PACKAGE_DIR" -name .DS_Store -delete
 
 cd "$BUILD_DIR"
-zip -rq "$(basename "$ZIP_PATH")" "$(basename "$PACKAGE_DIR")"
+(
+  cd "$PACKAGE_DIR"
+  zip -rq "$ZIP_PATH" .
+)
 cp "$ZIP_PATH" "$VERSIONED_ZIP_PATH"
 
 echo "Packaged extension $VERSION at $ZIP_PATH and $VERSIONED_ZIP_PATH"

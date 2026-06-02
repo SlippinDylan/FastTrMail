@@ -7,8 +7,6 @@ on:
   push:
     branches:
       - main
-    tags:
-      - "v*"
   workflow_dispatch:
 
 jobs:
@@ -24,12 +22,7 @@ jobs:
       - name: Read extension version
         id: version
         run: |
-          VERSION="$(python3 - <<'PY'
-          import json
-          from pathlib import Path
-          print(json.loads(Path('extension/manifest.json').read_text())['version'])
-          PY
-          )"
+          VERSION="$(jq -r '.version' extension/manifest.json)"
           echo "value=${VERSION}" >> "$GITHUB_OUTPUT"
           echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
 
@@ -73,14 +66,13 @@ jobs:
             gh release create latest --title "Latest (${VERSION})" --notes-file "$NOTES_FILE"
           fi
 
-          gh release delete-asset latest "fasttrmail.zip" --yes >/dev/null 2>&1 || true
+          gh release view latest --json assets --jq '.assets[].name' \
+            | while IFS= read -r asset_name; do
+                if [[ "$asset_name" == fasttrmail-*.zip ]]; then
+                  gh release delete-asset latest "$asset_name" --yes >/dev/null 2>&1 || true
+                fi
+              done
 
           gh release upload latest \
             "dist/fasttrmail-${VERSION}.zip" \
             --clobber
-
-      - name: Publish release asset
-        if: startsWith(github.ref, 'refs/tags/')
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release create "${GITHUB_REF_NAME}" "dist/fasttrmail-${VERSION}.zip" --generate-notes --title "${GITHUB_REF_NAME}"

@@ -1,13 +1,16 @@
 (function initBackgroundShared(scope) {
   const ns = scope.FastTrMailBackground || (scope.FastTrMailBackground = {});
+  const catalog = scope.FastTrMailCatalog;
+  const entities = scope.FastTrMailEntities;
+  const requestRegistryApi = scope.FastTrMailRequestRegistry;
 
-  ns.DEFAULT_SETTINGS = {
-    provider: "google-web",
-    targetLanguage: "zh-CN",
-    googleApiKey: "",
-    microsoftApiKey: "",
-    microsoftRegion: ""
-  };
+  if (!catalog || !entities || !requestRegistryApi) {
+    throw new Error("FastTrMail shared dependencies failed to load.");
+  }
+
+  ns.DEFAULT_SETTINGS = { ...catalog.DEFAULT_SETTINGS };
+  ns.PROVIDER_LABELS = { ...catalog.PROVIDER_LABELS };
+  ns.normalizeSettings = catalog.normalizeSettings;
 
   ns.EDGE_AUTH_URL = "https://edge.microsoft.com/translate/auth";
   ns.EDGE_TRANSLATE_URL = "https://api.cognitive.microsofttranslator.com/translate";
@@ -19,28 +22,12 @@
   ns.edgeAuthCache = null;
   ns.edgeAuthPromise = null;
 
-  ns.LANGUAGE_DEFINITIONS = [
-    { id: "zh-CN", label: "Chinese (Simplified)", google: "zh-CN", microsoft: "zh-Hans" },
-    { id: "zh-TW", label: "Chinese (Traditional)", google: "zh-TW", microsoft: "zh-Hant" },
-    { id: "en", label: "English", google: "en", microsoft: "en" },
-    { id: "ja", label: "Japanese", google: "ja", microsoft: "ja" },
-    { id: "ko", label: "Korean", google: "ko", microsoft: "ko" },
-    { id: "fr", label: "French", google: "fr", microsoft: "fr" },
-    { id: "de", label: "German", google: "de", microsoft: "de" },
-    { id: "es", label: "Spanish", google: "es", microsoft: "es" },
-    { id: "it", label: "Italian", google: "it", microsoft: "it" },
-    { id: "pt", label: "Portuguese", google: "pt", microsoft: "pt" },
-    { id: "ru", label: "Russian", google: "ru", microsoft: "ru" }
-  ];
+  ns.LANGUAGE_DEFINITIONS = catalog.LANGUAGE_DEFINITIONS.map((language) => ({
+    ...language
+  }));
+  ns.requestRegistry = requestRegistryApi.createRequestRegistry();
 
-  ns.decodeHtmlEntities = function decodeHtmlEntities(text) {
-    return text
-      .replace(/&quot;/g, "\"")
-      .replace(/&#39;/g, "'")
-      .replace(/&amp;/g, "&")
-      .replace(/&lt;/g, "<")
-      .replace(/&gt;/g, ">");
-  };
+  ns.decodeHtmlEntities = entities.decodeHtmlEntities;
 
   ns.getJwtExpiry = function getJwtExpiry(token) {
     const parts = token.split(".");
