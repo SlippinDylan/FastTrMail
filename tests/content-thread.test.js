@@ -336,8 +336,11 @@ test("injectButtons inserts the translate button into the top toolbar right afte
   app.thread.injectButtons(document, () => {});
 
   const translateButton = toolbar.querySelector(".fmt-translate-button");
+  const translateDivider = toolbar.querySelector(".fmt-translate-divider");
   assert.ok(translateButton, "expected translate button inside the top toolbar");
-  assert.equal(toolbar.children[toolbar.children.indexOf(moreButton) + 1], translateButton);
+  assert.ok(translateDivider, "expected native divider before translate button");
+  assert.equal(toolbar.children[toolbar.children.indexOf(moreButton) + 1], translateDivider);
+  assert.equal(toolbar.children[toolbar.children.indexOf(moreButton) + 2], translateButton);
   assert.equal(threadTitle.querySelector(".fmt-translate-button"), null);
 });
 
@@ -376,11 +379,13 @@ test("injectButtons removes a toolbar translate button when the page no longer h
 
   app.thread.injectButtons(document, () => {});
   assert.ok(toolbar.querySelector(".fmt-translate-button"));
+  assert.ok(toolbar.querySelector(".fmt-translate-divider"));
 
   threadRoot.removeChild(threadTitle);
   app.thread.injectButtons(document, () => {});
 
   assert.equal(toolbar.querySelector(".fmt-translate-button"), null);
+  assert.equal(toolbar.querySelector(".fmt-translate-divider"), null);
 });
 
 test("injectButtons binds the toolbar button to the visible thread when multiple thread roots exist", () => {

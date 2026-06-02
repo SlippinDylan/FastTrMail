@@ -6,6 +6,7 @@
     MESSAGE_INSTANCE_ATTRIBUTE,
     SEGMENT_ATTRIBUTE
   } = app.constants;
+  const TOOLBAR_DIVIDER_CLASS = "fmt-translate-divider";
   const { threadStates } = app.state;
   const toolbarButtonThreadRoots = new WeakMap();
   const {
@@ -271,6 +272,12 @@
       toolbarButtonThreadRoots.delete(button);
       button.remove();
     });
+
+    toolbar.querySelectorAll(`.${TOOLBAR_DIVIDER_CLASS}`).forEach((divider) => {
+      if (divider instanceof HTMLElement) {
+        divider.remove();
+      }
+    });
   }
 
   function createTranslateButton(onTranslateClick) {
@@ -294,19 +301,34 @@
       const labelText = normalizeIdentityValue(candidate.querySelector(".label")?.textContent || "", 40);
       return labelText === "更多" || labelText.toLowerCase() === "more";
     });
+    const divider = ensureTranslateDivider(toolbar);
     const flexSpacer = toolbar.querySelector(".v-Toolbar-flex");
 
     if (anchorButton?.nextElementSibling instanceof HTMLElement) {
-      toolbar.insertBefore(button, anchorButton.nextElementSibling);
+      toolbar.insertBefore(divider, anchorButton.nextElementSibling);
+      toolbar.insertBefore(button, divider.nextElementSibling);
       return;
     }
 
     if (flexSpacer instanceof HTMLElement) {
+      toolbar.insertBefore(divider, flexSpacer);
       toolbar.insertBefore(button, flexSpacer);
       return;
     }
 
+    toolbar.appendChild(divider);
     toolbar.appendChild(button);
+  }
+
+  function ensureTranslateDivider(toolbar) {
+    const existingDivider = toolbar.querySelector(`.${TOOLBAR_DIVIDER_CLASS}`);
+    if (existingDivider instanceof HTMLElement) {
+      return existingDivider;
+    }
+
+    const divider = document.createElement("span");
+    divider.className = `v-Toolbar-divider ${TOOLBAR_DIVIDER_CLASS}`;
+    return divider;
   }
 
   function getThreadMessageEntries(threadRoot) {
