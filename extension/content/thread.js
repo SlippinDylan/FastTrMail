@@ -4,10 +4,10 @@
     BUTTON_ACTIVE_CLASS,
     BUTTON_CLASS,
     MESSAGE_INSTANCE_ATTRIBUTE,
-    SEGMENT_ATTRIBUTE,
-    TRANSLATE_ICON_SVG
+    SEGMENT_ATTRIBUTE
   } = app.constants;
   const { threadStates } = app.state;
+  const toolbarButtonThreadRoots = new WeakMap();
   const {
     nextMessageInstanceId,
     nextThreadStateKey,
@@ -17,7 +17,36 @@
   } = app.utils;
 
   function findThreadRoot(element) {
-    return element.closest(".v-Thread");
+    if (!(element instanceof HTMLElement)) {
+      return null;
+    }
+
+    if (element.classList.contains(BUTTON_CLASS)) {
+      const mappedThreadRoot = toolbarButtonThreadRoots.get(element);
+      if (mappedThreadRoot instanceof HTMLElement) {
+        return mappedThreadRoot;
+      }
+    }
+
+    const directThreadRoot = element.closest(".v-Thread");
+    if (directThreadRoot instanceof HTMLElement) {
+      return directThreadRoot;
+    }
+
+    const pageRoot = findPageRoot(element);
+    if (!(pageRoot instanceof HTMLElement)) {
+      return null;
+    }
+
+    return findPrimaryThreadRoot(pageRoot);
+  }
+
+  function findPageRoot(element) {
+    if (!(element instanceof HTMLElement)) {
+      return null;
+    }
+
+    return element.closest(".v-Page");
   }
 
   function normalizeIdentityValue(value, maxLength = 240) {
@@ -101,23 +130,117 @@
 
   function injectButtons(root, onTranslateClick) {
     withObserverMuted(() => {
-      root.querySelectorAll(".v-MessageCard-actions .fmt-translate-button").forEach((node) => node.remove());
+      const pageRoots = collectRelevantPageRoots(root);
 
-      for (const threadTitle of root.querySelectorAll(".v-Thread-title")) {
-        if (!(threadTitle instanceof HTMLElement)) {
+      for (const pageRoot of pageRoots) {
+        if (!(pageRoot instanceof HTMLElement)) {
           continue;
         }
 
-        const button = ensureTranslateButton(threadTitle, onTranslateClick);
-        const threadRoot = findThreadRoot(threadTitle);
+        const toolbar = findToolbarForPageRoot(pageRoot);
+        const threadRoot = findPrimaryThreadRoot(pageRoot);
+        const threadTitle = threadRoot instanceof HTMLElement
+          ? threadRoot.querySelector(".v-Thread-title")
+          : null;
+
+        if (!(toolbar instanceof HTMLElement) || !(threadTitle instanceof HTMLElement)) {
+          removeToolbarTranslateButtons(toolbar);
+          continue;
+        }
+
+        const button = ensureTranslateButton(toolbar, onTranslateClick);
+        toolbarButtonThreadRoots.set(button, threadRoot);
         updateButtonState(button, isThreadActive(threadRoot));
       }
     });
   }
 
-  function ensureTranslateButton(threadTitle, onTranslateClick) {
-    const buttons = Array.from(threadTitle.querySelectorAll(`.${BUTTON_CLASS}`)).filter((candidate) => {
-      return candidate instanceof HTMLElement && candidate.closest(".v-Thread-title") === threadTitle;
+  function collectRelevantPageRoots(root) {
+    const pageRoots = new Set();
+
+    if (root instanceof HTMLElement) {
+      if (root.matches(".v-Page")) {
+        pageRoots.add(root);
+      }
+
+      const directPageRoot = findPageRoot(root);
+      if (directPageRoot instanceof HTMLElement) {
+        pageRoots.add(directPageRoot);
+      }
+    }
+
+    if (root && typeof root.querySelectorAll === "function") {
+      root.querySelectorAll(".v-Page").forEach((pageRoot) => {
+        if (pageRoot instanceof HTMLElement) {
+          pageRoots.add(pageRoot);
+        }
+      });
+    }
+
+    return Array.from(pageRoots);
+  }
+
+  function findToolbarForPageRoot(pageRoot) {
+    if (!(pageRoot instanceof HTMLElement)) {
+      return null;
+    }
+
+    const toolbar = pageRoot.querySelector(".v-Toolbar");
+    return toolbar instanceof HTMLElement ? toolbar : null;
+  }
+
+  function findPrimaryThreadRoot(pageRoot) {
+    if (!(pageRoot instanceof HTMLElement)) {
+      return null;
+    }
+
+    const candidates = Array.from(pageRoot.querySelectorAll(".v-Page-content .v-Thread")).filter(
+      (candidate) => candidate instanceof HTMLElement
+    );
+
+    if (candidates.length === 0) {
+      return null;
+    }
+
+    let bestCandidate = null;
+    let bestScore = Number.NEGATIVE_INFINITY;
+
+    candidates.forEach((candidate, index) => {
+      const title = candidate.querySelector(".v-Thread-title h1");
+      const titleText = normalizeIdentityValue(title?.textContent || "", 320);
+      const messageCardCount = candidate.querySelectorAll(".v-MessageCard.app-contentCard").length;
+      const score = (
+        (titleText ? 1000 : 0) +
+        (isElementProbablyVisible(candidate) ? 100 : 0) +
+        Math.min(messageCardCount, 20) * 10 +
+        index
+      );
+
+      if (score >= bestScore) {
+        bestScore = score;
+        bestCandidate = candidate;
+      }
+    });
+
+    return bestCandidate instanceof HTMLElement ? bestCandidate : null;
+  }
+
+  function isElementProbablyVisible(element) {
+    if (!(element instanceof HTMLElement)) {
+      return false;
+    }
+
+    if (typeof element.getBoundingClientRect !== "function") {
+      return true;
+    }
+
+    const rect = element.getBoundingClientRect();
+    return (rect.width > 0 || rect.height > 0);
+  }
+
+  function ensureTranslateButton(toolbar, onTranslateClick) {
+    const buttons = Array.from(toolbar.querySelectorAll(`.${BUTTON_CLASS}`)).filter((candidate) => {
+      return candidate instanceof HTMLElement && candidate.closest(".v-Toolbar") === toolbar;
     });
     const [existingButton, ...duplicates] = buttons;
 
@@ -127,39 +250,63 @@
       ? existingButton
       : createTranslateButton(onTranslateClick);
 
-    placeTranslateButton(threadTitle, button);
+    placeTranslateButton(toolbar, button);
     app.debug.log("thread", existingButton ? "reuse-translate-button" : "create-translate-button", {
-      threadTitle: summarizeText(threadTitle.textContent),
+      toolbarText: summarizeText(toolbar.textContent),
       buttonTitle: button.getAttribute("title") || ""
     });
     return button;
   }
 
+  function removeToolbarTranslateButtons(toolbar) {
+    if (!(toolbar instanceof HTMLElement)) {
+      return;
+    }
+
+    toolbar.querySelectorAll(`.${BUTTON_CLASS}`).forEach((button) => {
+      if (!(button instanceof HTMLElement)) {
+        return;
+      }
+
+      toolbarButtonThreadRoots.delete(button);
+      button.remove();
+    });
+  }
+
   function createTranslateButton(onTranslateClick) {
     const button = document.createElement("button");
     button.type = "button";
-    button.className = "v-Button v-Button--subtle v-Button--iconOnly v-Button--tooltipLabel u-my-n3 has-icon fmt-translate-button";
+    button.className = "v-Button v-Button--subtleStandard v-Button--sizeM fmt-translate-button";
     button.style.position = "relative";
-    button.style.width = "32px";
-    button.style.height = "32px";
-    button.innerHTML = `${TRANSLATE_ICON_SVG}<span class="label"></span>`;
+    button.innerHTML = "<span class=\"label\"></span>";
     updateButtonState(button, false);
     button.addEventListener("click", onTranslateClick);
     return button;
   }
 
-  function placeTranslateButton(threadTitle, button) {
-    const actionButtons = Array.from(threadTitle.querySelectorAll(":scope > button"));
-    const printButton = actionButtons.find((candidate) => {
-      return candidate !== button && candidate.querySelector(".label")?.textContent?.includes("打印");
-    });
+  function placeTranslateButton(toolbar, button) {
+    const actionButtons = Array.from(toolbar.querySelectorAll(":scope > button"));
+    const anchorButton = actionButtons.find((candidate) => {
+      if (candidate === button) {
+        return false;
+      }
 
-    if (printButton) {
-      threadTitle.insertBefore(button, printButton);
+      const labelText = normalizeIdentityValue(candidate.querySelector(".label")?.textContent || "", 40);
+      return labelText === "更多" || labelText.toLowerCase() === "more";
+    });
+    const flexSpacer = toolbar.querySelector(".v-Toolbar-flex");
+
+    if (anchorButton?.nextElementSibling instanceof HTMLElement) {
+      toolbar.insertBefore(button, anchorButton.nextElementSibling);
       return;
     }
 
-    threadTitle.appendChild(button);
+    if (flexSpacer instanceof HTMLElement) {
+      toolbar.insertBefore(button, flexSpacer);
+      return;
+    }
+
+    toolbar.appendChild(button);
   }
 
   function getThreadMessageEntries(threadRoot) {
@@ -386,11 +533,41 @@
   }
 
   function syncThreadButtons(threadRoot, isActive) {
+    if (!(threadRoot instanceof HTMLElement)) {
+      return;
+    }
+
     threadRoot.querySelectorAll(`.${BUTTON_CLASS}`).forEach((button) => {
       if (button instanceof HTMLElement) {
         updateButtonState(button, isActive);
       }
     });
+
+    const pageRoot = findPageRoot(threadRoot);
+    const toolbarButton = findToolbarTranslateButton(pageRoot, threadRoot);
+    if (toolbarButton instanceof HTMLElement) {
+      updateButtonState(toolbarButton, isActive);
+    }
+  }
+
+  function findToolbarTranslateButton(pageRoot, threadRoot) {
+    const toolbar = findToolbarForPageRoot(pageRoot);
+    if (!(toolbar instanceof HTMLElement)) {
+      return null;
+    }
+
+    const candidates = toolbar.querySelectorAll(`.${BUTTON_CLASS}`);
+    for (const candidate of candidates) {
+      if (!(candidate instanceof HTMLElement)) {
+        continue;
+      }
+
+      if (toolbarButtonThreadRoots.get(candidate) === threadRoot) {
+        return candidate;
+      }
+    }
+
+    return null;
   }
 
   function updateButtonState(button, isActive) {
