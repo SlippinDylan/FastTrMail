@@ -18,6 +18,7 @@ body {
   padding: 40px 20px;
   display: grid;
   gap: 18px;
+  align-content: start;
   justify-items: center;
 }
 

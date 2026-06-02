@@ -6,6 +6,7 @@ const vm = require("node:vm");
 
 const repoRoot = path.resolve(__dirname, "..");
 const optionsHtmlPath = path.join(repoRoot, "extension", "options.html");
+const optionsCssPath = path.join(repoRoot, "extension", "options.css");
 
 function toPlainData(value) {
   return JSON.parse(JSON.stringify(value));
@@ -167,4 +168,10 @@ test("options markup places the standalone action row after the settings card", 
   const actionRowIndex = optionsHtml.indexOf("class=\"page-actions\"");
   assert.ok(settingsCardIndex >= 0);
   assert.ok(actionRowIndex > settingsCardIndex);
+});
+
+test("options page grid keeps cards content-sized instead of stretching to viewport height", () => {
+  const optionsCss = fs.readFileSync(optionsCssPath, "utf8");
+
+  assert.match(optionsCss, /\.page\s*\{[\s\S]*align-content:\s*start;/);
 });
