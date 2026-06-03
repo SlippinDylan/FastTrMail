@@ -19,7 +19,7 @@ FastTrMail 是一个专门面向 Fastmail 网页版的 Chrome Manifest V3 邮件
   - `Microsoft Translator API`
 - 点击浏览器右上角扩展图标后，直接弹出菜单，可进入设置页。
 - 设置页为中文卡片式布局，支持配置目标语言和各 Provider 的凭据。
-- GitHub Actions 自动打包，产出可直接 `Load unpacked` 的目录和 zip。
+- GitHub Actions 自动打包，产出可直接 `Load unpacked` 的目录、zip 和已签名的 crx。
 
 ## 项目结构
 
@@ -38,7 +38,8 @@ FastTrMail 是一个专门面向 Fastmail 网页版的 Chrome Manifest V3 邮件
 - `extension/content/translation.js`: 标题与正文翻译状态机
 - `extension/content/controller.js`: 事件、观察器、刷新调度
 - `docs/privacy-policy.html`: 上架用隐私政策页面
-- `scripts/package.sh`: 本地打包脚本
+- `scripts/package.sh`: 生成 unpacked 目录与 zip 的本地打包脚本
+- `scripts/package-crx.sh`: 使用固定 PEM 私钥生成已签名 crx 的本地打包脚本
 - `.github/workflows/ci.yml`: PR 与分支校验工作流
 - `.github/workflows/package.yml`: `main` 分支打包与发布工作流
 
@@ -77,6 +78,13 @@ FastTrMail 是一个专门面向 Fastmail 网页版的 Chrome Manifest V3 邮件
 bash scripts/package.sh
 ```
 
+如果你已经准备好了 PEM 私钥，也可以在本地继续生成 `.crx`：
+
+```bash
+CHROME_EXTENSION_PEM_PATH=/absolute/path/to/fasttrmail-release-key.pem \
+bash scripts/package-crx.sh
+```
+
 ## 运行测试
 
 ```bash
@@ -88,16 +96,18 @@ npm test
 - `dist/fasttrmail/`
 - `dist/fasttrmail.zip`
 - `dist/fasttrmail-<version>.zip`
+- `dist/fasttrmail-<version>.crx`（执行 `scripts/package-crx.sh` 后生成）
 
 ## CI
 
 - 版本号以 `extension/manifest.json` 为唯一来源
 - `.github/workflows/ci.yml` 会在 `pull_request` 和 `main` 分支变更时运行测试与打包校验
-- `.github/workflows/package.yml` 只负责 `main` 分支的正式打包产物与 `latest` GitHub Release 更新
-- 只需要修改 `extension/manifest.json` 里的 `version`，工作流会自动用这个版本号命名产物
+- `.github/workflows/package.yml` 会在 `main` 分支上生成版本化发布资产，并按 `manifest.json` 里的版本号自动创建或更新同名 GitHub Release
+- 只需要修改 `extension/manifest.json` 里的 `version`，工作流会自动用这个版本号命名产物与 Release tag，并将 Release 标题显示为 `v<version>`
+- 同一个版本号只允许绑定到一个 commit；如果你要发布新的构建，必须先提升 `extension/manifest.json` 里的版本号
 - GitHub Actions Summary 会显示当前版本号和产物路径
-- `latest` Release 只保留一个版本化 zip：`fasttrmail-<version>.zip`
-- GitHub Release 机制本身依赖 tag；当前方案只使用固定的 `latest` tag，不再维护 `v1.2.0` 这类版本 tag
+- Release 会上传两个正式资产：`fasttrmail-<version>.zip` 和 `fasttrmail-<version>.crx`
+- `CHROME_EXTENSION_PEM_BASE64` 是 Release 工作流生成 `.crx` 所需的 GitHub Actions Secret
 
 ## License
 

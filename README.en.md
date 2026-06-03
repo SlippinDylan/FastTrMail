@@ -19,7 +19,7 @@ FastTrMail is a Chrome Manifest V3 extension built specifically for Fastmail Web
   - `Microsoft Translator API`
 - Opens a popup from the Chrome toolbar and links directly to the settings page
 - Provides a Chinese settings page for provider credentials and target language selection
-- Packages automatically through GitHub Actions for `Load unpacked` use and release zip distribution
+- Packages automatically through GitHub Actions for `Load unpacked` use plus release zip and signed crx distribution
 
 ## Project Structure
 
@@ -38,7 +38,8 @@ FastTrMail is a Chrome Manifest V3 extension built specifically for Fastmail Web
 - `extension/content/translation.js`: title and body translation state machine
 - `extension/content/controller.js`: events, observers, and refresh scheduling
 - `docs/privacy-policy.html`: privacy policy page for store listing
-- `scripts/package.sh`: local packaging script
+- `scripts/package.sh`: local packaging script for unpacked output and zip assets
+- `scripts/package-crx.sh`: local packaging script for signed crx assets with a fixed PEM key
 - `.github/workflows/ci.yml`: PR and branch validation workflow
 - `.github/workflows/package.yml`: release packaging and publishing workflow for `main`
 
@@ -77,6 +78,13 @@ If you use `Google Web (no key)`, you can skip credential setup.
 bash scripts/package.sh
 ```
 
+If you already have the signing key, you can generate the `.crx` locally as well:
+
+```bash
+CHROME_EXTENSION_PEM_PATH=/absolute/path/to/fasttrmail-release-key.pem \
+bash scripts/package-crx.sh
+```
+
 ## Run Tests
 
 ```bash
@@ -88,12 +96,17 @@ Packaging outputs:
 - `dist/fasttrmail/`
 - `dist/fasttrmail.zip`
 - `dist/fasttrmail-<version>.zip`
+- `dist/fasttrmail-<version>.crx` (after running `scripts/package-crx.sh`)
 
 ## CI
 
 - `.github/workflows/ci.yml` validates pull requests and `main` branch changes by running tests and a packaging check
-- `.github/workflows/package.yml` publishes packaged artifacts and updates the fixed `latest` GitHub Release from `main`
+- `.github/workflows/package.yml` publishes versioned release artifacts from `main` and creates or updates the matching GitHub Release for the manifest version
 - The extension version is sourced only from `extension/manifest.json`
+- The release tag matches `manifest.json` version, and the release title is displayed as `v<version>`
+- A version is immutable once published to a commit; publish a new build only after incrementing `extension/manifest.json`
+- Each release uploads `fasttrmail-<version>.zip` and `fasttrmail-<version>.crx`
+- `CHROME_EXTENSION_PEM_BASE64` is the GitHub Actions secret used to restore the signing key for CRX packaging
 
 ## License
 

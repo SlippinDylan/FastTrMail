@@ -56,14 +56,18 @@ test("workflow reads the package version from extension manifest.json", () => {
   assert.match(workflow, /jq -r '\.version' extension\/manifest\.json/);
 });
 
-test("workflow publishes only from main and rotates latest release zip assets", () => {
+test("workflow publishes versioned releases with zip and crx assets", () => {
   const workflow = fs.readFileSync(workflowPath, "utf8");
 
-  assert.doesNotMatch(workflow, /tags:\s*\n\s*-\s*"v\*"/);
-  assert.match(workflow, /gh release create latest/);
-  assert.match(workflow, /if \[\[ "\$asset_name" == fasttrmail-\*\.zip \]\]/);
-  assert.match(workflow, /gh release delete-asset latest "\$asset_name"/);
-  assert.doesNotMatch(workflow, /startsWith\(github\.ref, 'refs\/tags\/'\)/);
+  assert.match(workflow, /TAG_NAME="\$VERSION"/);
+  assert.match(workflow, /RELEASE_TITLE="v\$VERSION"/);
+  assert.match(workflow, /gh release create "\$TAG_NAME" .*--title "\$RELEASE_TITLE"/);
+  assert.match(workflow, /CURRENT_RELEASE_SHA=/);
+  assert.match(workflow, /Version \$VERSION is already published/);
+  assert.match(workflow, /fasttrmail-\$\{VERSION\}\.zip/);
+  assert.match(workflow, /fasttrmail-\$\{VERSION\}\.crx/);
+  assert.match(workflow, /gh release delete-asset "\$TAG_NAME" "\$asset_name"/);
+  assert.match(workflow, /dist\/fasttrmail-\$\{VERSION\}\.crx/);
 });
 
 test("pull request CI workflow exists and runs tests plus packaging checks", () => {
@@ -79,6 +83,15 @@ test("release packaging workflow stays focused on main-branch publication", () =
 
   assert.doesNotMatch(workflow, /pull_request:/);
   assert.match(workflow, /push:\s*\n\s*branches:\s*\n\s*-\s*main/);
+});
+
+test("release workflow restores the signing key from the repository secret", () => {
+  const workflow = fs.readFileSync(workflowPath, "utf8");
+
+  assert.match(workflow, /CHROME_EXTENSION_PEM_BASE64/);
+  assert.match(workflow, /fasttrmail\.pem/);
+  assert.match(workflow, /base64 --decode/);
+  assert.match(workflow, /bash scripts\/package-crx\.sh/);
 });
 
 test("privacy policy page exists and discloses local storage plus third-party translation transfer", () => {
@@ -107,6 +120,17 @@ test("packaged zip places manifest.json at the archive root", () => {
 
   assert.ok(fileList.includes("manifest.json"), "archive root should include manifest.json");
   assert.ok(!fileList.some((entry) => entry.startsWith("fasttrmail/")), "archive should not wrap files in an extra directory");
+});
+
+test("package-crx script signs the unpacked extension with a provided pem key", () => {
+  const scriptPath = path.join(repoRoot, "scripts", "package-crx.sh");
+  const script = fs.readFileSync(scriptPath, "utf8");
+
+  assert.match(script, /PEM_PATH=/);
+  assert.match(script, /\/Applications\/Google Chrome\.app\/Contents\/MacOS\/Google Chrome/);
+  assert.match(script, /--pack-extension=/);
+  assert.match(script, /--pack-extension-key=/);
+  assert.match(script, /fasttrmail-\$VERSION\.crx/);
 });
 
 test("options and popup load the shared catalog before their page scripts", () => {

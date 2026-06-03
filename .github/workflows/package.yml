@@ -19,6 +19,9 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
+      - name: Set up Chrome
+        uses: browser-actions/setup-chrome@v1
+
       - name: Read extension version
         id: version
         run: |
@@ -29,6 +32,18 @@ jobs:
       - name: Package extension
         run: bash scripts/package.sh
 
+      - name: Restore extension signing key
+        env:
+          CHROME_EXTENSION_PEM_BASE64: ${{ secrets.CHROME_EXTENSION_PEM_BASE64 }}
+        run: |
+          PEM_PATH="$RUNNER_TEMP/fasttrmail.pem"
+          printf '%s' "$CHROME_EXTENSION_PEM_BASE64" | base64 --decode > "$PEM_PATH"
+          chmod 600 "$PEM_PATH"
+          echo "CHROME_EXTENSION_PEM_PATH=$PEM_PATH" >> "$GITHUB_ENV"
+
+      - name: Package signed CRX
+        run: bash scripts/package-crx.sh
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
@@ -36,6 +51,7 @@ jobs:
           path: |
             dist/fasttrmail
             dist/fasttrmail-${{ steps.version.outputs.value }}.zip
+            dist/fasttrmail-${{ steps.version.outputs.value }}.crx
 
       - name: Write workflow summary
         run: |
@@ -45,34 +61,43 @@ jobs:
             echo "- Version: \`${VERSION}\`"
             echo "- Unpacked directory: \`dist/fasttrmail/\`"
             echo "- Release zip: \`dist/fasttrmail-${VERSION}.zip\`"
+            echo "- Release crx: \`dist/fasttrmail-${VERSION}.crx\`"
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Publish latest release asset
+      - name: Publish versioned release assets
         if: github.ref == 'refs/heads/main'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          TAG_NAME="$VERSION"
+          RELEASE_TITLE="v$VERSION"
           NOTES_FILE="$(mktemp)"
           {
-            echo "Automated latest build from \`main\`."
+            echo "Automated release build from \`main\`."
             echo ""
             echo "- Version: \`${VERSION}\`"
             echo "- Commit: \`${GITHUB_SHA}\`"
           } > "$NOTES_FILE"
 
-          if gh release view latest >/dev/null 2>&1; then
-            gh release edit latest --title "Latest (${VERSION})" --notes-file "$NOTES_FILE"
+          if gh release view "$TAG_NAME" >/dev/null 2>&1; then
+            CURRENT_RELEASE_SHA="$(gh release view "$TAG_NAME" --json targetCommitish --jq '.targetCommitish')"
+            if [[ "$CURRENT_RELEASE_SHA" != "$GITHUB_SHA" ]]; then
+              echo "Version $VERSION is already published for commit $CURRENT_RELEASE_SHA. Bump extension/manifest.json before publishing a new release from $GITHUB_SHA." >&2
+              exit 1
+            fi
+            gh release edit "$TAG_NAME" --title "$RELEASE_TITLE" --notes-file "$NOTES_FILE"
           else
-            gh release create latest --title "Latest (${VERSION})" --notes-file "$NOTES_FILE"
+            gh release create "$TAG_NAME" --target "$GITHUB_SHA" --title "$RELEASE_TITLE" --notes-file "$NOTES_FILE"
           fi
 
-          gh release view latest --json assets --jq '.assets[].name' \
+          gh release view "$TAG_NAME" --json assets --jq '.assets[].name' \
             | while IFS= read -r asset_name; do
-                if [[ "$asset_name" == fasttrmail-*.zip ]]; then
-                  gh release delete-asset latest "$asset_name" --yes >/dev/null 2>&1 || true
+                if [[ "$asset_name" == fasttrmail-${VERSION}.zip || "$asset_name" == fasttrmail-${VERSION}.crx ]]; then
+                  gh release delete-asset "$TAG_NAME" "$asset_name" --yes >/dev/null 2>&1 || true
                 fi
               done
 
-          gh release upload latest \
+          gh release upload "$TAG_NAME" \
             "dist/fasttrmail-${VERSION}.zip" \
+            "dist/fasttrmail-${VERSION}.crx" \
             --clobber
