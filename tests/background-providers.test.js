@@ -49,6 +49,35 @@ test("handleTranslateRequest rejects empty text payloads", async () => {
   );
 });
 
+test("handleTranslateRequest still reaches google-web when session storage is unavailable", async () => {
+  const { sandbox, background } = createBackgroundApp();
+
+  sandbox.chrome.storage.local.get = async () => ({
+    provider: "google-web",
+    targetLanguage: "zh-CN",
+    uiLanguage: "auto"
+  });
+  delete sandbox.chrome.storage.session;
+
+  background.translateWithGoogleWeb = async (text, languageDefinition, signal) => {
+    assert.equal(text, "hello");
+    assert.equal(languageDefinition.id, "zh-CN");
+    assert.equal(signal, undefined);
+
+    return {
+      provider: "google-web",
+      translatedText: "你好"
+    };
+  };
+
+  const result = await background.handleTranslateRequest({ text: "hello" });
+
+  assert.deepEqual(toPlainData(result), {
+    provider: "google-web",
+    translatedText: "你好"
+  });
+});
+
 test("cancelTranslateRequest trims request ids before delegating to the registry", () => {
   const { background } = createBackgroundApp();
 

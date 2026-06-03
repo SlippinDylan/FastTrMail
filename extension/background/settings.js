@@ -1,9 +1,75 @@
 (function initBackgroundSettings(scope) {
   const ns = scope.FastTrMailBackground;
+  let volatileSecretSettings = ns.normalizeSecretSettings({});
 
   async function readNormalized(area, keys, normalize) {
     const stored = await area.get(keys);
     return normalize(stored);
+  }
+
+  function getSessionStorageArea() {
+    const area = chrome.storage?.session;
+
+    if (!area || typeof area.get !== "function" || typeof area.set !== "function") {
+      return null;
+    }
+
+    return area;
+  }
+
+  async function loadSecretSettingsSnapshot() {
+    const sessionArea = getSessionStorageArea();
+
+    if (!sessionArea) {
+      return {
+        settings: { ...volatileSecretSettings },
+        persisted: false
+      };
+    }
+
+    try {
+      const normalized = await readNormalized(
+        sessionArea,
+        ns.SECRET_SETTINGS_KEYS,
+        ns.normalizeSecretSettings
+      );
+      volatileSecretSettings = normalized;
+      return {
+        settings: { ...normalized },
+        persisted: true
+      };
+    } catch (_error) {
+      return {
+        settings: { ...volatileSecretSettings },
+        persisted: false
+      };
+    }
+  }
+
+  async function persistSecretSettingsSnapshot(settings) {
+    const normalized = ns.normalizeSecretSettings(settings);
+    volatileSecretSettings = normalized;
+
+    const sessionArea = getSessionStorageArea();
+    if (!sessionArea) {
+      return {
+        normalized,
+        persisted: false
+      };
+    }
+
+    try {
+      await sessionArea.set(normalized);
+      return {
+        normalized,
+        persisted: true
+      };
+    } catch (_error) {
+      return {
+        normalized,
+        persisted: false
+      };
+    }
   }
 
   function collectChangedValues(keys, current, normalized) {
@@ -16,6 +82,18 @@
     }
 
     return nextValues;
+  }
+
+  function mergeSecretSettingsSources(legacySettings, currentSettings) {
+    const legacy = ns.normalizeSecretSettings(legacySettings);
+    const current = ns.normalizeSecretSettings(currentSettings);
+    const merged = {};
+
+    for (const key of ns.SECRET_SETTINGS_KEYS) {
+      merged[key] = current[key] || legacy[key] || "";
+    }
+
+    return merged;
   }
 
   ns.configureStorageAccess = async function configureStorageAccess() {
@@ -45,22 +123,23 @@
       await chrome.storage.local.set(nextPublicSettings);
     }
 
-    const currentSecretSettings = await chrome.storage.session.get(ns.SECRET_SETTINGS_KEYS);
-    const normalizedSecretSettings = ns.normalizeSecretSettings({
-      ...legacySecretSettings,
-      ...currentSecretSettings
-    });
+    const currentSecretState = await loadSecretSettingsSnapshot();
+    const currentSecretSettings = currentSecretState.settings;
+    const normalizedSecretSettings = mergeSecretSettingsSources(
+      legacySecretSettings,
+      currentSecretSettings
+    );
     const nextSecretSettings = collectChangedValues(
       ns.SECRET_SETTINGS_KEYS,
       currentSecretSettings,
       normalizedSecretSettings
     );
 
-    if (Object.keys(nextSecretSettings).length > 0) {
-      await chrome.storage.session.set(nextSecretSettings);
-    }
+    const sessionWrite = Object.keys(nextSecretSettings).length > 0
+      ? await persistSecretSettingsSnapshot(normalizedSecretSettings)
+      : { persisted: currentSecretState.persisted };
 
-    if (typeof chrome.storage.local.remove === "function") {
+    if (sessionWrite.persisted && typeof chrome.storage.local.remove === "function") {
       await chrome.storage.local.remove(ns.SECRET_SETTINGS_KEYS);
     }
   };
@@ -70,7 +149,7 @@
   };
 
   ns.getSecretSettings = async function getSecretSettings() {
-    return readNormalized(chrome.storage.session, ns.SECRET_SETTINGS_KEYS, ns.normalizeSecretSettings);
+    return (await loadSecretSettingsSnapshot()).settings;
   };
 
   ns.getEffectiveSettings = async function getEffectiveSettings() {
@@ -100,8 +179,7 @@
   };
 
   ns.saveSecretSettings = async function saveSecretSettings(settings) {
-    const normalized = ns.normalizeSecretSettings(settings);
-    await chrome.storage.session.set(normalized);
+    const { normalized } = await persistSecretSettingsSnapshot(settings);
     return normalized;
   };
 

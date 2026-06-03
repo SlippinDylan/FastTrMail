@@ -100,6 +100,20 @@ test("getSecretSettings normalizes only secret settings", async () => {
   });
 });
 
+test("getSecretSettings falls back to empty volatile secrets when session storage is unavailable", async () => {
+  const { sandbox, background } = createBackgroundApp({ modulePaths: SETTINGS_MODULES });
+
+  delete sandbox.chrome.storage.session;
+
+  const settings = await background.getSecretSettings();
+
+  assert.deepEqual(toPlainData(settings), {
+    googleApiKey: "",
+    microsoftApiKey: "",
+    microsoftRegion: ""
+  });
+});
+
 test("getEffectiveSettings merges normalized public and secret settings before provider execution", async () => {
   const { sandbox, background, catalog } = createBackgroundApp({ modulePaths: SETTINGS_MODULES });
 
@@ -119,6 +133,26 @@ test("getEffectiveSettings merges normalized public and secret settings before p
   assert.deepEqual(toPlainData(settings), {
     ...catalog.DEFAULT_SETTINGS,
     microsoftApiKey: "secret"
+  });
+});
+
+test("getEffectiveSettings still returns public settings when session storage is unavailable", async () => {
+  const { sandbox, background, catalog } = createBackgroundApp({ modulePaths: SETTINGS_MODULES });
+
+  sandbox.chrome.storage.local.get = async () => ({
+    provider: "google-web",
+    targetLanguage: "ja",
+    uiLanguage: "zh-CN"
+  });
+  delete sandbox.chrome.storage.session;
+
+  const settings = await background.getEffectiveSettings();
+
+  assert.deepEqual(toPlainData(settings), {
+    ...catalog.DEFAULT_SECRET_SETTINGS,
+    provider: "google-web",
+    targetLanguage: "ja",
+    uiLanguage: "zh-CN"
   });
 });
 
@@ -173,6 +207,30 @@ test("saveSecretSettings persists normalized secret settings in session storage 
     googleApiKey: "key",
     microsoftApiKey: "",
     microsoftRegion: "eastasia"
+  });
+});
+
+test("saveSecretSettings keeps volatile secrets available when session storage is unavailable", async () => {
+  const { sandbox, background } = createBackgroundApp({ modulePaths: SETTINGS_MODULES });
+
+  delete sandbox.chrome.storage.session;
+
+  const saved = await background.saveSecretSettings({
+    googleApiKey: " key ",
+    microsoftApiKey: " ms-key ",
+    microsoftRegion: " global "
+  });
+  const reloaded = await background.getSecretSettings();
+
+  assert.deepEqual(toPlainData(saved), {
+    googleApiKey: "key",
+    microsoftApiKey: "ms-key",
+    microsoftRegion: "global"
+  });
+  assert.deepEqual(toPlainData(reloaded), {
+    googleApiKey: "key",
+    microsoftApiKey: "ms-key",
+    microsoftRegion: "global"
   });
 });
 
