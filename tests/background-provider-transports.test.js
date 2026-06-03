@@ -73,7 +73,7 @@ test("handleSegmentTranslateRequest preserves segment order for google-web fan-o
 
   assert.deepEqual(toPlainData(result), {
     provider: "google-web",
-    providerLabel: "Google Web（免 Key）",
+    providerLabel: "Google Web（免 Key，实验性）",
     targetLanguage: "zh-CN",
     targetLanguageLabel: "简体中文",
     translatedSegments: ["第一段", "第二段"]

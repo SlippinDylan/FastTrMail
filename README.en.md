@@ -14,9 +14,9 @@ FastTrMail is a Chrome Manifest V3 extension built specifically for Fastmail Web
 - Injects a `Translate` button into the Fastmail message action area
 - Appends translated content below the original message without replacing the source text
 - Supports these translation providers:
-  - `Google Web (no key, experimental)`
   - `Google Cloud API`
   - `Microsoft Translator API`
+  - `Google Web (no key, experimental)`
 - Opens a popup from the Chrome toolbar and links directly to the settings page
 - Provides a Chinese settings page for provider credentials and target language selection
 - Packages automatically through GitHub Actions for `Load unpacked` use plus release zip and signed crx distribution
@@ -56,6 +56,7 @@ FastTrMail is a Chrome Manifest V3 extension built specifically for Fastmail Web
 2. Click `打开设置`
 3. Select a translation provider and target language
 4. If you choose a paid API provider, fill in the required credentials in the settings page
+5. Official-provider credentials are stored only for the current browser session and must be re-entered after a browser restart
 
 ## Provider Credentials
 
@@ -115,5 +116,7 @@ This project is released under the MIT License. See [LICENSE](LICENSE).
 ## Notes
 
 - The extension sends email content to the translation provider you select, so it is not an offline translator
+- `provider`, `targetLanguage`, and `uiLanguage` are persisted in `chrome.storage.local`
+- `Google API Key`, `Microsoft API Key`, and `Microsoft Region` are stored only in `chrome.storage.session` for the current browser session
 - The content script uses DOM observation to adapt to Fastmail's single-page navigation behavior
 - If you publish to the Chrome Web Store, you can host `docs/privacy-policy.html` through GitHub Pages as the privacy policy URL

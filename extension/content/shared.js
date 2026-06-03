@@ -127,9 +127,13 @@
 
       app.state.uiLocalePromise = (async () => {
         try {
-          const stored = await chrome.storage.local.get(["uiLanguage"]);
-          app.state.uiLanguage = i18nApi.normalizeUiLanguage(stored?.uiLanguage);
-          app.state.uiLocale = i18nApi.resolveUiLanguage(app.state.uiLanguage);
+          const response = await chrome.runtime.sendMessage({ type: "settings:get-ui-context" });
+          const uiContext = response?.ok && response.uiContext && typeof response.uiContext === "object"
+            ? response.uiContext
+            : null;
+
+          app.state.uiLanguage = i18nApi.normalizeUiLanguage(uiContext?.uiLanguage);
+          app.state.uiLocale = i18nApi.normalizeLocale(uiContext?.locale);
         } catch (_error) {
           app.state.uiLanguage = "auto";
           app.state.uiLocale = i18nApi.resolveUiLanguage("auto");

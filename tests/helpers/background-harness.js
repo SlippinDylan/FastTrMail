@@ -20,6 +20,10 @@ function createChromeStub() {
     installed: [],
     message: []
   };
+  const accessLevelCalls = {
+    local: [],
+    session: []
+  };
 
   const chrome = {
     runtime: {
@@ -40,16 +44,33 @@ function createChromeStub() {
           return {};
         },
         async set() {
+        },
+        async remove() {
+        },
+        async setAccessLevel(options) {
+          accessLevelCalls.local.push(options);
+        }
+      },
+      session: {
+        async get() {
+          return {};
+        },
+        async set() {
+        },
+        async remove() {
+        },
+        async setAccessLevel(options) {
+          accessLevelCalls.session.push(options);
         }
       }
     }
   };
 
-  return { chrome, listeners };
+  return { chrome, listeners, accessLevelCalls };
 }
 
 function createBackgroundSandbox(overrides = {}) {
-  const { chrome, listeners } = createChromeStub();
+  const { chrome, listeners, accessLevelCalls } = createChromeStub();
   const sandbox = {
     AbortController,
     URL,
@@ -69,6 +90,7 @@ function createBackgroundSandbox(overrides = {}) {
   sandbox.self = sandbox;
   sandbox.globalThis = sandbox;
   sandbox.__listeners__ = listeners;
+  sandbox.__accessLevelCalls__ = accessLevelCalls;
   return sandbox;
 }
 
@@ -94,7 +116,8 @@ function createBackgroundApp(options = {}) {
     sandbox,
     background: sandbox.FastTrMailBackground,
     catalog: sandbox.FastTrMailCatalog,
-    listeners: sandbox.__listeners__
+    listeners: sandbox.__listeners__,
+    accessLevelCalls: sandbox.__accessLevelCalls__
   };
 }
 

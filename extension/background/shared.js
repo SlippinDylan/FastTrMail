@@ -9,9 +9,16 @@
     throw new Error("FastTrMail shared dependencies failed to load.");
   }
 
+  ns.PUBLIC_SETTINGS_KEYS = catalog.PUBLIC_SETTINGS_KEYS.slice();
+  ns.SECRET_SETTINGS_KEYS = catalog.SECRET_SETTINGS_KEYS.slice();
+  ns.DEFAULT_PUBLIC_SETTINGS = { ...catalog.DEFAULT_PUBLIC_SETTINGS };
+  ns.DEFAULT_SECRET_SETTINGS = { ...catalog.DEFAULT_SECRET_SETTINGS };
   ns.DEFAULT_SETTINGS = { ...catalog.DEFAULT_SETTINGS };
   ns.PROVIDER_LABELS = { ...catalog.PROVIDER_LABELS };
+  ns.normalizePublicSettings = catalog.normalizePublicSettings;
+  ns.normalizeSecretSettings = catalog.normalizeSecretSettings;
   ns.normalizeSettings = catalog.normalizeSettings;
+  ns.resolveUiLanguage = i18n.resolveUiLanguage;
   ns.ERROR_CODES = { ...i18n.ERROR_CODES };
 
   ns.LANGUAGE_DEFINITIONS = catalog.LANGUAGE_DEFINITIONS.map((language) => ({

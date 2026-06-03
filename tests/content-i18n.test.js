@@ -6,6 +6,10 @@ const vm = require("node:vm");
 
 const repoRoot = path.resolve(__dirname, "..");
 
+function toPlainData(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
 function loadExtensionScript(relativePath, sandbox) {
   const absolutePath = path.join(repoRoot, "extension", relativePath);
   const source = fs.readFileSync(absolutePath, "utf8");
@@ -13,6 +17,7 @@ function loadExtensionScript(relativePath, sandbox) {
 }
 
 function createSandbox(uiLanguage = "zh-HK") {
+  const sentMessages = [];
   const sandbox = {
     chrome: {
       i18n: {
@@ -20,11 +25,16 @@ function createSandbox(uiLanguage = "zh-HK") {
           return "en-US";
         }
       },
-      storage: {
-        local: {
-          async get() {
-            return { uiLanguage };
-          }
+      runtime: {
+        async sendMessage(message) {
+          sentMessages.push(message);
+          return {
+            ok: true,
+            uiContext: {
+              uiLanguage,
+              locale: uiLanguage
+            }
+          };
         }
       }
     },
@@ -42,10 +52,11 @@ function createSandbox(uiLanguage = "zh-HK") {
 
   sandbox.globalThis = sandbox;
   sandbox.self = sandbox;
+  sandbox.__sentMessages__ = sentMessages;
   return sandbox;
 }
 
-test("content i18n refreshLocale uses persisted uiLanguage", async () => {
+test("content i18n refreshLocale uses background ui context instead of direct storage access", async () => {
   const sandbox = createSandbox("zh-HK");
   loadExtensionScript("shared/i18n.js", sandbox);
   loadExtensionScript("content/shared.js", sandbox);
@@ -53,6 +64,7 @@ test("content i18n refreshLocale uses persisted uiLanguage", async () => {
   const locale = await sandbox.FastTrMailContent.i18n.refreshLocale();
 
   assert.equal(locale, "zh-HK");
+  assert.deepEqual(toPlainData(sandbox.__sentMessages__), [{ type: "settings:get-ui-context" }]);
   assert.equal(sandbox.FastTrMailContent.i18n.t("content.translate"), "翻譯");
 });
 

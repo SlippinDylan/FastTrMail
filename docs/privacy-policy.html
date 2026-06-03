@@ -80,7 +80,7 @@
     <main>
       <article class="card">
         <h1>FastTrMail Privacy Policy</h1>
-        <p class="meta">Effective date: 2026-06-02</p>
+        <p class="meta">Effective date: 2026-06-03</p>
 
         <p>
           FastTrMail is a Chrome extension that adds inline translation to Fastmail web message views.
@@ -91,7 +91,7 @@
         <ul>
           <li>FastTrMail does not collect personal data on developer-controlled servers.</li>
           <li>FastTrMail only sends email content to the translation service you choose.</li>
-          <li>API keys are stored locally in your browser and are not sent to the developer.</li>
+          <li>API credentials for official providers are stored only for the current browser session.</li>
           <li>FastTrMail does not sell data.</li>
           <li>FastTrMail does not use data for advertising, profiling, or marketing.</li>
         </ul>
@@ -109,16 +109,22 @@
           configuration, that provider may be Google or Microsoft.
         </p>
         <p>
+          If you use Google Cloud API or Microsoft Translator API, the credentials you provide are
+          also sent to the corresponding provider for authentication as part of the core translation
+          request.
+        </p>
+        <p>
           The developer of FastTrMail does not receive a copy of the email content being translated.
         </p>
 
         <h2>What data is stored locally</h2>
-        <p>FastTrMail stores the following settings locally in Chrome storage on your device:</p>
+        <p>FastTrMail stores the following settings in Chrome storage on your device:</p>
         <ul>
-          <li>Selected translation provider</li>
-          <li>Selected target language</li>
-          <li>Google API key, if you provide one</li>
-          <li>Microsoft API key and region, if you provide them</li>
+          <li>Selected translation provider in <code>chrome.storage.local</code></li>
+          <li>Selected target language in <code>chrome.storage.local</code></li>
+          <li>Selected <code>uiLanguage</code> in <code>chrome.storage.local</code></li>
+          <li>Google API key in <code>chrome.storage.session</code>, if you provide one</li>
+          <li>Microsoft API key and region in <code>chrome.storage.session</code>, if you provide them</li>
         </ul>
         <p>
           This information is used only to make the extension work. It is not transmitted to the
@@ -134,15 +140,17 @@
 
         <h2>Security</h2>
         <p>
-          FastTrMail uses HTTPS requests for supported translation providers. API keys are stored
-          locally in Chrome storage on your device.
+          FastTrMail uses HTTPS requests for supported translation providers. Official-provider API
+          credentials are stored only for the current browser session and are not persisted across
+          browser restarts.
         </p>
 
         <h2>Your choices</h2>
         <p>
-          You can remove stored settings at any time by clearing the extension's local storage or by
+          You can remove stored settings at any time by clearing the extension's storage or by
           uninstalling the extension. You can also stop sending email content to a provider by not
-          using the translation feature.
+          using the translation feature, and you can clear session-stored API credentials by closing
+          the current browser session.
         </p>
 
         <h2>Contact</h2>

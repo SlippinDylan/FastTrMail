@@ -14,9 +14,9 @@ FastTrMail 是一个专门面向 Fastmail 网页版的 Chrome Manifest V3 邮件
 - 在 Fastmail 邮件详情操作区插入 `翻译` 按钮。
 - 翻译结果显示在原文下方，不覆盖原文。
 - 支持以下翻译服务：
-  - `Google Web（免 Key，实验性）`
   - `Google Cloud API`
   - `Microsoft Translator API`
+  - `Google Web（免 Key，实验性）`
 - 点击浏览器右上角扩展图标后，直接弹出菜单，可进入设置页。
 - 设置页为中文卡片式布局，支持配置目标语言和各 Provider 的凭据。
 - GitHub Actions 自动打包，产出可直接 `Load unpacked` 的目录、zip 和已签名的 crx。
@@ -56,6 +56,7 @@ FastTrMail 是一个专门面向 Fastmail 网页版的 Chrome Manifest V3 邮件
 2. 在弹出的菜单里点击 `打开设置`
 3. 选择默认 Provider 和目标语言
 4. 如果你选择的是正式 API Provider，再在对应卡片里填写 API 凭据
+5. 正式 API 的凭据只会保存在当前浏览器会话中，重启浏览器后需要重新填写
 
 ## 申请凭据
 
@@ -116,5 +117,7 @@ npm test
 ## 说明
 
 - 这个扩展会把邮件正文发送到你选择的翻译服务，因此不是离线翻译。
+- `provider`、`targetLanguage`、`uiLanguage` 会持久化保存在 `chrome.storage.local`。
+- `Google API Key`、`Microsoft API Key` 和 `Microsoft Region` 只保存在当前浏览器会话的 `chrome.storage.session` 中。
 - 内容脚本使用 DOM 监听，适配 Fastmail 单页应用的切换行为。
 - 如需上架 Chrome Web Store，可直接将 `docs/privacy-policy.html` 发布为 GitHub Pages 隐私政策页面。

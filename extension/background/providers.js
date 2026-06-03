@@ -8,7 +8,7 @@
     const requestEntry = requestId ? ns.requestRegistry.register(requestId) : null;
 
     try {
-      const settings = await ns.getSettings();
+      const settings = await ns.getEffectiveSettings();
       const languageDefinition = ns.getLanguageDefinition(settings.targetLanguage);
 
       if (!languageDefinition) {

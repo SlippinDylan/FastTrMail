@@ -99,6 +99,17 @@ h1 {
   font-weight: 600;
 }
 
+.field-note {
+  margin: -4px 0 6px;
+  padding: 12px 14px;
+  border: 1px solid #d9e3f2;
+  border-radius: 12px;
+  background: #f7faff;
+  color: #50627d;
+  line-height: 1.6;
+  font-size: 14px;
+}
+
 .field select,
 .field input {
   width: 100%;

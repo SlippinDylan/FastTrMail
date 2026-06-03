@@ -28,6 +28,13 @@ test("manifest grants host permissions for both Google translation endpoints", (
   );
 });
 
+test("manifest description is explicitly scoped to Fastmail Web", () => {
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+
+  assert.match(manifest.description, /Fastmail/i);
+  assert.doesNotMatch(manifest.description, /webmail message views/i);
+});
+
 test("manifest does not keep edge-web review-risk permissions", () => {
   const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
 
@@ -94,13 +101,15 @@ test("release workflow restores the signing key from the repository secret", () 
   assert.match(workflow, /bash scripts\/package-crx\.sh/);
 });
 
-test("privacy policy page exists and discloses local storage plus third-party translation transfer", () => {
+test("privacy policy page exists and discloses session-only credentials plus provider data transfer", () => {
   const policy = fs.readFileSync(privacyPolicyPath, "utf8");
 
   assert.match(policy, /Privacy Policy/i);
   assert.match(policy, /does not collect personal data on developer-controlled servers/i);
   assert.match(policy, /only sends email content to the translation service you choose/i);
-  assert.match(policy, /API keys are stored locally/i);
+  assert.match(policy, /uiLanguage/i);
+  assert.match(policy, /current browser session/i);
+  assert.match(policy, /for authentication/i);
   assert.match(policy, /does not sell data/i);
   assert.match(policy, /does not use data for advertising/i);
 });
@@ -139,6 +148,7 @@ test("options and popup load the shared catalog before their page scripts", () =
 
   assert.match(optionsHtml, /<script src="shared\/catalog\.js"><\/script>\s*<script src="shared\/i18n\.js"><\/script>\s*<script src="options\.js"><\/script>/);
   assert.match(popupHtml, /<script src="shared\/catalog\.js"><\/script>\s*<script src="shared\/i18n\.js"><\/script>\s*<script src="popup\.js"><\/script>/);
+  assert.match(popupHtml, /id="current-status"/);
 });
 
 test("README files cross-link languages and document Fastmail-only scope plus license", () => {
@@ -149,8 +159,10 @@ test("README files cross-link languages and document Fastmail-only scope plus li
   assert.match(readmeEn, /\[简体中文\]\(README\.md\)/);
   assert.match(readmeZh, /Fastmail/);
   assert.match(readmeZh, /只对 `https:\/\/app\.fastmail\.com\/\*` 生效|仅对 `https:\/\/app\.fastmail\.com\/\*` 生效/);
+  assert.match(readmeZh, /当前浏览器会话|当前会话/);
   assert.match(readmeZh, /## License/);
   assert.match(readmeZh, /\[LICENSE\]\(LICENSE\)/);
+  assert.match(readmeEn, /current browser session/i);
 });
 
 test("background bootstrap loads shared dependencies before background modules", () => {

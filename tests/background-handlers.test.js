@@ -8,7 +8,7 @@ function toPlainData(value) {
 }
 
 function flushMicrotasks() {
-  return new Promise((resolve) => queueMicrotask(resolve));
+  return new Promise((resolve) => setTimeout(resolve, 0));
 }
 
 test("initialize registers install and message listeners", () => {
@@ -81,7 +81,7 @@ test("handleMessage falls back to stable error messages for non-Error failures",
   background.handleTranslateRequest = async () => {
     throw "boom";
   };
-  background.getSettings = async () => {
+  background.getPublicSettings = async () => {
     throw "boom";
   };
 
@@ -96,7 +96,7 @@ test("handleMessage falls back to stable error messages for non-Error failures",
 
   let settingsPayload = null;
   background.handleMessage(
-    { type: "get-settings" },
+    { type: "settings:get-public" },
     {},
     (response) => {
       settingsPayload = response;
@@ -118,15 +118,80 @@ test("handleMessage falls back to stable error messages for non-Error failures",
 test("handleMessage serves get-settings and cancel-translation requests", async () => {
   const { background } = createBackgroundApp();
 
-  background.getSettings = async () => ({ provider: "google-web" });
+  background.getPublicSettings = async () => ({
+    provider: "google-web",
+    targetLanguage: "en",
+    uiLanguage: "auto"
+  });
+  background.getSecretSettings = async () => ({
+    googleApiKey: "",
+    microsoftApiKey: "secret",
+    microsoftRegion: "global"
+  });
+  background.getUiContext = async () => ({
+    uiLanguage: "auto",
+    locale: "en"
+  });
+  background.savePublicSettings = async (settings) => settings;
+  background.saveSecretSettings = async (settings) => settings;
   background.cancelTranslateRequest = (requestId) => requestId === "request-1";
 
   let settingsPayload = null;
   const settingsAsync = background.handleMessage(
-    { type: "get-settings" },
+    { type: "settings:get-public" },
     {},
     (response) => {
       settingsPayload = response;
+    }
+  );
+
+  let optionsViewPayload = null;
+  const optionsViewAsync = background.handleMessage(
+    { type: "settings:get-options-view" },
+    {},
+    (response) => {
+      optionsViewPayload = response;
+    }
+  );
+
+  let uiContextPayload = null;
+  const uiContextAsync = background.handleMessage(
+    { type: "settings:get-ui-context" },
+    {},
+    (response) => {
+      uiContextPayload = response;
+    }
+  );
+
+  let savePublicPayload = null;
+  const savePublicAsync = background.handleMessage(
+    {
+      type: "settings:save-public",
+      publicSettings: {
+        provider: "google-api",
+        targetLanguage: "zh-CN",
+        uiLanguage: "en"
+      }
+    },
+    {},
+    (response) => {
+      savePublicPayload = response;
+    }
+  );
+
+  let saveSecretsPayload = null;
+  const saveSecretsAsync = background.handleMessage(
+    {
+      type: "settings:save-secrets",
+      secretSettings: {
+        googleApiKey: "key",
+        microsoftApiKey: "",
+        microsoftRegion: ""
+      }
+    },
+    {},
+    (response) => {
+      saveSecretsPayload = response;
     }
   );
 
@@ -142,9 +207,53 @@ test("handleMessage serves get-settings and cancel-translation requests", async 
   await flushMicrotasks();
 
   assert.equal(settingsAsync, true);
+  assert.equal(optionsViewAsync, true);
+  assert.equal(uiContextAsync, true);
+  assert.equal(savePublicAsync, true);
+  assert.equal(saveSecretsAsync, true);
   assert.deepEqual(toPlainData(settingsPayload), {
     ok: true,
-    settings: { provider: "google-web" }
+    publicSettings: {
+      provider: "google-web",
+      targetLanguage: "en",
+      uiLanguage: "auto"
+    }
+  });
+  assert.deepEqual(toPlainData(optionsViewPayload), {
+    ok: true,
+    publicSettings: {
+      provider: "google-web",
+      targetLanguage: "en",
+      uiLanguage: "auto"
+    },
+    secretSettings: {
+      googleApiKey: "",
+      microsoftApiKey: "secret",
+      microsoftRegion: "global"
+    }
+  });
+  assert.deepEqual(toPlainData(uiContextPayload), {
+    ok: true,
+    uiContext: {
+      uiLanguage: "auto",
+      locale: "en"
+    }
+  });
+  assert.deepEqual(toPlainData(savePublicPayload), {
+    ok: true,
+    publicSettings: {
+      provider: "google-api",
+      targetLanguage: "zh-CN",
+      uiLanguage: "en"
+    }
+  });
+  assert.deepEqual(toPlainData(saveSecretsPayload), {
+    ok: true,
+    secretSettings: {
+      googleApiKey: "key",
+      microsoftApiKey: "",
+      microsoftRegion: ""
+    }
   });
   assert.equal(cancelAsync, false);
   assert.deepEqual(toPlainData(cancelPayload), {

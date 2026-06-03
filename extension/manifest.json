@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "FastTrMail",
   "version": "1.0.0",
-  "description": "Add an inline translate button to webmail message views and append translated text below the original email body.",
+  "description": "Add an inline translate button to Fastmail Web message views and append translations below the original email body.",
   "permissions": [
     "storage"
   ],

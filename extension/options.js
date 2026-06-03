@@ -1,6 +1,23 @@
 (function initOptionsPage(scope) {
-  const { DEFAULT_SETTINGS, LANGUAGES, PROVIDERS, normalizeSettings } = scope.FastTrMailCatalog;
+  const {
+    DEFAULT_PUBLIC_SETTINGS,
+    DEFAULT_SECRET_SETTINGS,
+    LANGUAGES,
+    PROVIDERS,
+    normalizePublicSettings,
+    normalizeSecretSettings,
+    normalizeSettings
+  } = scope.FastTrMailCatalog;
   const i18n = scope.FastTrMailI18n;
+
+  async function requestSettings(message) {
+    const response = await scope.chrome.runtime.sendMessage(message);
+    if (!response?.ok) {
+      throw new Error(response?.errorCode || "settings_request_failed");
+    }
+
+    return response;
+  }
 
   function collectPageElements(documentRef = scope.document) {
     if (!documentRef || typeof documentRef.getElementById !== "function") {
@@ -126,9 +143,30 @@
     });
   }
 
+  function readPublicSettingsFromForm(elements = pageElements) {
+    return normalizePublicSettings({
+      uiLanguage: elements.uiLanguageSelect.value,
+      provider: elements.providerSelect.value,
+      targetLanguage: elements.targetLanguageSelect.value
+    });
+  }
+
+  function readSecretSettingsFromForm(elements = pageElements) {
+    return normalizeSecretSettings({
+      googleApiKey: elements.googleApiKeyInput.value.trim(),
+      microsoftApiKey: elements.microsoftApiKeyInput.value.trim(),
+      microsoftRegion: elements.microsoftRegionInput.value.trim()
+    });
+  }
+
   async function initialize(elements = pageElements) {
-    const stored = await scope.chrome.storage.local.get(Object.keys(DEFAULT_SETTINGS));
-    const settings = normalizeSettings(stored);
+    const response = await requestSettings({ type: "settings:get-options-view" });
+    const settings = normalizeSettings({
+      ...DEFAULT_PUBLIC_SETTINGS,
+      ...DEFAULT_SECRET_SETTINGS,
+      ...response.publicSettings,
+      ...response.secretSettings
+    });
 
     elements.googleApiKeyInput.value = settings.googleApiKey;
     elements.microsoftApiKeyInput.value = settings.microsoftApiKey;
@@ -137,7 +175,7 @@
     renderLocalizedPage(settings, elements);
   }
 
-  function setStatus(messageKey, state, elements = pageElements, locale = getResolvedLocale(elements?.uiLanguageSelect?.value || DEFAULT_SETTINGS.uiLanguage)) {
+  function setStatus(messageKey, state, elements = pageElements, locale = getResolvedLocale(elements?.uiLanguageSelect?.value || DEFAULT_PUBLIC_SETTINGS.uiLanguage)) {
     const statusNode = elements?.statusNode;
     if (!statusNode) {
       return;
@@ -161,11 +199,19 @@
   async function handleSubmit(event, elements = pageElements) {
     event.preventDefault();
 
-    const settings = readSettingsFromForm(elements);
-    const locale = getResolvedLocale(settings.uiLanguage);
+    const publicSettings = readPublicSettingsFromForm(elements);
+    const secretSettings = readSecretSettingsFromForm(elements);
+    const locale = getResolvedLocale(publicSettings.uiLanguage);
 
     try {
-      await scope.chrome.storage.local.set(settings);
+      await requestSettings({
+        type: "settings:save-public",
+        publicSettings
+      });
+      await requestSettings({
+        type: "settings:save-secrets",
+        secretSettings
+      });
       setStatus("options.saved", "success", elements, locale);
     } catch (_error) {
       setStatus("options.saveFailed", "error", elements, locale);
@@ -196,6 +242,8 @@
     getProviderPanelState,
     syncProviderFields,
     readSettingsFromForm,
+    readPublicSettingsFromForm,
+    readSecretSettingsFromForm,
     renderLocalizedPage,
     initialize,
     handleSubmit,
@@ -208,7 +256,7 @@
   if (pageElements) {
     bindPageEvents(pageElements);
     initialize(pageElements).catch(() => {
-      const locale = getResolvedLocale(DEFAULT_SETTINGS.uiLanguage);
+      const locale = getResolvedLocale(DEFAULT_PUBLIC_SETTINGS.uiLanguage);
       i18n.applyDocumentLanguage(scope.document, locale);
       scope.document.title = i18n.t(locale, "options.documentTitle");
       i18n.applyTranslations(scope.document, locale);

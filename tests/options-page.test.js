@@ -12,6 +12,10 @@ function toPlainData(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
+function flushTasks() {
+  return new Promise((resolve) => setTimeout(resolve, 0));
+}
+
 function loadExtensionScript(relativePath, sandbox) {
   const absolutePath = path.join(repoRoot, "extension", relativePath);
   const source = fs.readFileSync(absolutePath, "utf8");
@@ -93,15 +97,44 @@ function createDocument() {
 
 function loadOptionsPage() {
   const document = createDocument();
+  const sentMessages = [];
   const sandbox = {
     chrome: {
-      storage: {
-        local: {
-          async get() {
-            return {};
-          },
-          async set() {
+      runtime: {
+        async sendMessage(message) {
+          sentMessages.push(message);
+
+          if (message.type === "settings:get-options-view") {
+            return {
+              ok: true,
+              publicSettings: {
+                provider: "google-api",
+                targetLanguage: "zh-CN",
+                uiLanguage: "auto"
+              },
+              secretSettings: {
+                googleApiKey: "",
+                microsoftApiKey: "",
+                microsoftRegion: ""
+              }
+            };
           }
+
+          if (message.type === "settings:save-public") {
+            return {
+              ok: true,
+              publicSettings: message.publicSettings
+            };
+          }
+
+          if (message.type === "settings:save-secrets") {
+            return {
+              ok: true,
+              secretSettings: message.secretSettings
+            };
+          }
+
+          throw new Error(`Unhandled message type: ${message.type}`);
         }
       }
     },
@@ -121,11 +154,16 @@ function loadOptionsPage() {
   loadExtensionScript("shared/i18n.js", sandbox);
   loadExtensionScript("options.js", sandbox);
 
-  return sandbox.FastTrMailOptionsPage || sandbox.module.exports;
+  return {
+    page: sandbox.FastTrMailOptionsPage || sandbox.module.exports,
+    sandbox,
+    document,
+    sentMessages
+  };
 }
 
 test("getProviderPanelState exposes only the matching credential section", () => {
-  const page = loadOptionsPage();
+  const { page } = loadOptionsPage();
 
   assert.deepEqual(toPlainData(page.getProviderPanelState("google-web")), {
     googleVisible: false,
@@ -142,7 +180,7 @@ test("getProviderPanelState exposes only the matching credential section", () =>
 });
 
 test("syncProviderFields toggles panel visibility attributes from the selected provider", () => {
-  const page = loadOptionsPage();
+  const { page } = loadOptionsPage();
   const nodes = {
     googlePanel: createElement("section"),
     microsoftPanel: createElement("section")
@@ -181,7 +219,7 @@ test("options page grid keeps cards content-sized instead of stretching to viewp
 });
 
 test("readSettingsFromForm includes uiLanguage and normalizes unsupported values", () => {
-  const page = loadOptionsPage();
+  const { page } = loadOptionsPage();
   const elements = {
     uiLanguageSelect: { value: "unsupported" },
     providerSelect: { value: "google-web" },
@@ -199,4 +237,53 @@ test("readSettingsFromForm includes uiLanguage and normalizes unsupported values
     microsoftApiKey: "secret",
     microsoftRegion: "eastasia"
   });
+});
+
+test("initialize loads public and secret settings through background messaging", async () => {
+  const { page, document, sentMessages } = loadOptionsPage();
+  const elements = page.collectPageElements(document);
+
+  await page.initialize(elements);
+
+  assert.equal(sentMessages.at(-1).type, "settings:get-options-view");
+  assert.equal(document.nodes.provider.value, "google-api");
+  assert.equal(document.nodes.targetLanguage.value, "zh-CN");
+  assert.equal(document.nodes.uiLanguage.value, "auto");
+});
+
+test("handleSubmit persists public and secret settings through separate background messages", async () => {
+  const { page, document, sentMessages } = loadOptionsPage();
+  const elements = page.collectPageElements(document);
+
+  document.nodes.uiLanguage.value = "en";
+  document.nodes.provider.value = "microsoft";
+  document.nodes.targetLanguage.value = "ja";
+  document.nodes.googleApiKey.value = " google-key ";
+  document.nodes.microsoftApiKey.value = " ms-key ";
+  document.nodes.microsoftRegion.value = " global ";
+
+  await page.handleSubmit({ preventDefault() {} }, elements);
+  await flushTasks();
+
+  assert.deepEqual(
+    toPlainData(sentMessages.slice(-2)),
+    [
+      {
+        type: "settings:save-public",
+        publicSettings: {
+          uiLanguage: "en",
+          provider: "microsoft",
+          targetLanguage: "ja"
+        }
+      },
+      {
+        type: "settings:save-secrets",
+        secretSettings: {
+          googleApiKey: "google-key",
+          microsoftApiKey: "ms-key",
+          microsoftRegion: "global"
+        }
+      }
+    ]
+  );
 });
