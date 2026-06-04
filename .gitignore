@@ -12,3 +12,6 @@ dist/
 # Editor
 *.swp
 *.swo
+
+# Local planning docs
+docs/superpowers/
