@@ -32,6 +32,7 @@ test("normalizeUiLanguage falls back to auto for unsupported values", () => {
 
 test("provider, target-language, and ui-language labels are localized", () => {
   assert.equal(i18n.getProviderLabel("en", "google-web"), "Google Web (No Key, Experimental)");
+  assert.equal(i18n.getProviderLabel("zh-CN", "edge-web"), "Microsoft Edge（免 Key）");
   assert.equal(i18n.getProviderLabel("zh-TW", "microsoft"), "Microsoft Translator API");
   assert.equal(i18n.getTargetLanguageLabel("en", "zh-CN"), "Simplified Chinese");
   assert.equal(i18n.getTargetLanguageLabel("zh-HK", "en"), "英文");
@@ -48,6 +49,10 @@ test("error codes map to localized messages", () => {
   assert.equal(
     i18n.getErrorMessage("en", i18n.ERROR_CODES.GOOGLE_API_KEY_MISSING),
     "Google Cloud API Key is not configured. Please add it in Settings first."
+  );
+  assert.equal(
+    i18n.getErrorMessage("zh-CN", i18n.ERROR_CODES.EDGE_WEB_UNAVAILABLE),
+    "Microsoft Edge 免 Key 翻译请求失败。"
   );
   assert.equal(
     i18n.getErrorMessage("zh-HK", i18n.ERROR_CODES.TRANSLATION_CANCELLED),

@@ -132,3 +132,67 @@ test("translateWithMicrosoft surfaces upstream service error messages", async ()
     (error) => error?.code === "microsoft_unavailable"
   );
 });
+
+test("translateWithEdgeWeb sends bearer-authenticated translation requests", async () => {
+  const { sandbox, background } = createBackgroundApp();
+  const requests = [];
+
+  background.getEdgeAuthToken = async () => "header.payload.signature";
+  sandbox.fetch = async (url, init) => {
+    requests.push({ url, init });
+    return {
+      ok: true,
+      async json() {
+        return [
+          {
+            translations: [
+              { text: "你好" }
+            ]
+          }
+        ];
+      }
+    };
+  };
+
+  const result = await background.translateWithEdgeWeb(
+    "hello",
+    background.getLanguageDefinition("zh-CN")
+  );
+
+  assert.equal(requests.length, 1);
+  assert.match(requests[0].url, /api\.cognitive\.microsofttranslator\.com\/translate/);
+  assert.equal(requests[0].init.headers.Authorization, "Bearer header.payload.signature");
+  assert.deepEqual(toPlainData(result), {
+    provider: "edge-web",
+    providerLabel: "Microsoft Edge（免 Key）",
+    targetLanguage: "zh-CN",
+    targetLanguageLabel: "简体中文",
+    translatedText: "你好"
+  });
+});
+
+test("translateSegmentsWithEdgeWeb rejects mismatched segment counts", async () => {
+  const { sandbox, background } = createBackgroundApp();
+
+  background.getEdgeAuthToken = async () => "header.payload.signature";
+  sandbox.fetch = async () => ({
+    ok: true,
+    async json() {
+      return [
+        {
+          translations: [
+            { text: "一" }
+          ]
+        }
+      ];
+    }
+  });
+
+  await assert.rejects(
+    background.translateSegmentsWithEdgeWeb(
+      ["one", "two"],
+      background.getLanguageDefinition("zh-CN")
+    ),
+    (error) => error?.code === "edge_web_unavailable"
+  );
+});

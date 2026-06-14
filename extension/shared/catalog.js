@@ -2,7 +2,8 @@
   const PROVIDERS = [
     { id: "google-api", label: "Google Cloud API" },
     { id: "microsoft", label: "Microsoft Translator API" },
-    { id: "google-web", label: "Google Web（免 Key，实验性）" }
+    { id: "google-web", label: "Google Web（免 Key，实验性）" },
+    { id: "edge-web", label: "Microsoft Edge（免 Key）" }
   ];
 
   const LANGUAGES = [

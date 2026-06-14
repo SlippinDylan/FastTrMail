@@ -11,6 +11,7 @@ const DEFAULT_MODULE_PATHS = [
   "background/request-registry.js",
   "background/shared.js",
   "background/settings.js",
+  "background/edge-auth.js",
   "background/providers.js",
   "background/handlers.js"
 ];
@@ -62,6 +63,10 @@ function createChromeStub() {
         async setAccessLevel(options) {
           accessLevelCalls.session.push(options);
         }
+      }
+    },
+    declarativeNetRequest: {
+      async updateSessionRules() {
       }
     }
   };

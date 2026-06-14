@@ -15,6 +15,7 @@
     GOOGLE_WEB_UNAVAILABLE: "google_web_unavailable",
     GOOGLE_API_UNAVAILABLE: "google_api_unavailable",
     MICROSOFT_UNAVAILABLE: "microsoft_unavailable",
+    EDGE_WEB_UNAVAILABLE: "edge_web_unavailable",
     UPSTREAM_FAILED: "upstream_failed"
   });
 
@@ -30,6 +31,7 @@
     [ERROR_CODES.GOOGLE_WEB_UNAVAILABLE]: "error.googleWebUnavailable",
     [ERROR_CODES.GOOGLE_API_UNAVAILABLE]: "error.googleApiUnavailable",
     [ERROR_CODES.MICROSOFT_UNAVAILABLE]: "error.microsoftUnavailable",
+    [ERROR_CODES.EDGE_WEB_UNAVAILABLE]: "error.edgeWebUnavailable",
     [ERROR_CODES.UPSTREAM_FAILED]: "error.upstreamFailed"
   });
 
@@ -81,6 +83,7 @@
       "uiLanguage.zh-TW": "繁體中文（台灣）",
       "uiLanguage.zh-HK": "繁體中文（香港）",
       "provider.google-web": "Google Web（免 Key，实验性）",
+      "provider.edge-web": "Microsoft Edge（免 Key）",
       "provider.google-api": "Google Cloud API",
       "provider.microsoft": "Microsoft Translator API",
       "targetLanguage.zh-CN": "简体中文",
@@ -115,6 +118,7 @@
       "error.googleWebUnavailable": "Google Web 翻译请求失败，请稍后重试或切换到正式 API。",
       "error.googleApiUnavailable": "Google Cloud 翻译请求失败。",
       "error.microsoftUnavailable": "Microsoft 翻译请求失败。",
+      "error.edgeWebUnavailable": "Microsoft Edge 免 Key 翻译请求失败。",
       "error.upstreamFailed": "翻译服务暂时不可用，请稍后重试。"
     }),
     en: Object.freeze({
@@ -164,6 +168,7 @@
       "uiLanguage.zh-TW": "Traditional Chinese (Taiwan)",
       "uiLanguage.zh-HK": "Traditional Chinese (Hong Kong)",
       "provider.google-web": "Google Web (No Key, Experimental)",
+      "provider.edge-web": "Microsoft Edge (No Key)",
       "provider.google-api": "Google Cloud API",
       "provider.microsoft": "Microsoft Translator API",
       "targetLanguage.zh-CN": "Simplified Chinese",
@@ -198,6 +203,7 @@
       "error.googleWebUnavailable": "Google Web translation failed. Please try again later or switch to the official API.",
       "error.googleApiUnavailable": "Google Cloud translation failed.",
       "error.microsoftUnavailable": "Microsoft translation failed.",
+      "error.edgeWebUnavailable": "Microsoft Edge translation without a key failed.",
       "error.upstreamFailed": "The translation service is temporarily unavailable. Please try again later."
     }),
     "zh-TW": Object.freeze({
@@ -247,6 +253,7 @@
       "uiLanguage.zh-TW": "繁體中文（台灣）",
       "uiLanguage.zh-HK": "繁體中文（香港）",
       "provider.google-web": "Google Web（免 Key，實驗性）",
+      "provider.edge-web": "Microsoft Edge（免 Key）",
       "provider.google-api": "Google Cloud API",
       "provider.microsoft": "Microsoft Translator API",
       "targetLanguage.zh-CN": "簡體中文",
@@ -281,6 +288,7 @@
       "error.googleWebUnavailable": "Google Web 翻譯請求失敗，請稍後再試或切換到正式 API。",
       "error.googleApiUnavailable": "Google Cloud 翻譯請求失敗。",
       "error.microsoftUnavailable": "Microsoft 翻譯請求失敗。",
+      "error.edgeWebUnavailable": "Microsoft Edge 免 Key 翻譯請求失敗。",
       "error.upstreamFailed": "翻譯服務暫時不可用，請稍後再試。"
     }),
     "zh-HK": Object.freeze({
@@ -330,6 +338,7 @@
       "uiLanguage.zh-TW": "繁體中文（台灣）",
       "uiLanguage.zh-HK": "繁體中文（香港）",
       "provider.google-web": "Google Web（免 Key，實驗性）",
+      "provider.edge-web": "Microsoft Edge（免 Key）",
       "provider.google-api": "Google Cloud API",
       "provider.microsoft": "Microsoft Translator API",
       "targetLanguage.zh-CN": "簡體中文",
@@ -364,6 +373,7 @@
       "error.googleWebUnavailable": "Google Web 翻譯請求失敗，請稍後再試或切換到正式 API。",
       "error.googleApiUnavailable": "Google Cloud 翻譯請求失敗。",
       "error.microsoftUnavailable": "Microsoft 翻譯請求失敗。",
+      "error.edgeWebUnavailable": "Microsoft Edge 免 Key 翻譯請求失敗。",
       "error.upstreamFailed": "翻譯服務暫時不可用，請稍後再試。"
     })
   });

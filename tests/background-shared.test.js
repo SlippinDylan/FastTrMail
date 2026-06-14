@@ -36,6 +36,16 @@ test("mapWithConcurrency preserves input order while limiting parallel work", as
   assert.equal(maxActive, 2);
 });
 
+test("getJwtExpiry falls back to a near-future timestamp when the token payload is malformed", () => {
+  const { background } = createBackgroundApp({ modulePaths: SHARED_MODULES });
+  const before = Date.now() + 9 * 60 * 1000;
+  const expiresAt = background.getJwtExpiry("not-a-jwt");
+  const after = Date.now() + 11 * 60 * 1000;
+
+  assert.ok(expiresAt >= before);
+  assert.ok(expiresAt <= after);
+});
+
 test("createErrorResponse preserves structured metadata for UI-side diagnostics", () => {
   const { background } = createBackgroundApp({ modulePaths: SHARED_MODULES });
   const error = background.createError(background.ERROR_CODES.MICROSOFT_UNAVAILABLE, {

@@ -4,9 +4,11 @@
   "version": "1.0.2",
   "description": "Add an inline translate button to Fastmail Web message views and append translations below the original email body.",
   "permissions": [
-    "storage"
+    "storage",
+    "declarativeNetRequest"
   ],
   "host_permissions": [
+    "https://edge.microsoft.com/*",
     "https://translate.googleapis.com/*",
     "https://translation.googleapis.com/*",
     "https://api.cognitive.microsofttranslator.com/*"

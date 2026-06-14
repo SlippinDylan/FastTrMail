@@ -35,16 +35,16 @@ test("manifest description is explicitly scoped to Fastmail Web", () => {
   assert.doesNotMatch(manifest.description, /webmail message views/i);
 });
 
-test("manifest does not keep edge-web review-risk permissions", () => {
+test("manifest restores the edge-web permissions required by the transport", () => {
   const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
 
   assert.ok(
-    !manifest.permissions.includes("declarativeNetRequest"),
-    "edge-web transport should not require declarativeNetRequest"
+    manifest.permissions.includes("declarativeNetRequest"),
+    "edge-web transport requires declarativeNetRequest"
   );
   assert.ok(
-    !manifest.host_permissions.includes("https://edge.microsoft.com/*"),
-    "edge-web auth host permission should be removed"
+    manifest.host_permissions.includes("https://edge.microsoft.com/*"),
+    "edge-web auth host permission should be restored"
   );
 });
 
@@ -178,5 +178,5 @@ test("background bootstrap loads shared dependencies before background modules",
     "shared/entities.js",
     "background/request-registry.js"
   ]);
-  assert.equal(modulePaths.includes("background/edge-auth.js"), false);
+  assert.equal(modulePaths.includes("background/edge-auth.js"), true);
 });
