@@ -9,6 +9,10 @@ FastTrMail 是一个专门面向 Fastmail 网页版的 Chrome Manifest V3 邮件
 - FastTrMail 只对 `https://app.fastmail.com/*` 生效
 - 它不会为 Gmail、Outlook Web 或其他网页邮箱提供翻译功能
 
+## 维护状态
+
+这是一个低维护的开源项目，主要按当前 Fastmail Web 的页面结构和 DOM 类名实现。未来如果 Fastmail 调整界面结构，扩展可能需要跟着更新。
+
 ## 功能
 
 - 在 Fastmail 邮件详情操作区插入 `翻译` 按钮。

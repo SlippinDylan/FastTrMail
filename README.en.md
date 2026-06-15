@@ -9,6 +9,10 @@ FastTrMail is a Chrome Manifest V3 extension built specifically for Fastmail Web
 - FastTrMail only works on `https://app.fastmail.com/*`
 - It does not add translation features to Gmail, Outlook Web, or other webmail products
 
+## Maintenance Status
+
+This is a low-maintenance open-source project built around the current Fastmail Web page structure and DOM class names. If Fastmail changes its interface structure in the future, the extension may need updates.
+
 ## Features
 
 - Injects a `Translate` button into the Fastmail message action area
