@@ -108,6 +108,7 @@ npm test
 - 版本号以 `extension/manifest.json` 为唯一来源
 - `.github/workflows/ci.yml` 会在 `pull_request` 和 `main` 分支变更时运行测试与打包校验
 - `.github/workflows/package.yml` 只会在 `main` 分支 CI 成功后生成版本化发布资产，并按 `manifest.json` 里的版本号自动创建或更新同名 GitHub Release
+- 当前版本已经绑定到较早 commit 时，非发布改动会正常跳过打包；发布新构建前必须先提升版本号
 - 只需要修改 `extension/manifest.json` 里的 `version`，工作流会自动用这个版本号命名产物与 Release tag，并将 Release 标题显示为 `v<version>`
 - 同一个版本号只允许绑定到一个 commit；如果你要发布新的构建，必须先提升 `extension/manifest.json` 里的版本号
 - GitHub Actions Summary 会显示当前版本号和产物路径
