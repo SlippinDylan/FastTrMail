@@ -106,7 +106,7 @@ Packaging outputs:
 ## CI
 
 - `.github/workflows/ci.yml` validates pull requests and `main` branch changes by running tests and a packaging check
-- `.github/workflows/package.yml` publishes versioned release artifacts from `main` and creates or updates the matching GitHub Release for the manifest version
+- `.github/workflows/package.yml` publishes versioned release artifacts only after `main` CI succeeds and creates or updates the matching GitHub Release for the manifest version
 - The extension version is sourced only from `extension/manifest.json`
 - The release tag matches `manifest.json` version, and the release title is displayed as `v<version>`
 - A version is immutable once published to a commit; publish a new build only after incrementing `extension/manifest.json`

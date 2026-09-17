@@ -85,11 +85,32 @@ test("pull request CI workflow exists and runs tests plus packaging checks", () 
   assert.match(workflow, /bash scripts\/package\.sh/);
 });
 
-test("release packaging workflow stays focused on main-branch publication", () => {
+test("release packaging waits for successful main-branch CI", () => {
   const workflow = fs.readFileSync(workflowPath, "utf8");
 
   assert.doesNotMatch(workflow, /pull_request:/);
-  assert.match(workflow, /push:\s*\n\s*branches:\s*\n\s*-\s*main/);
+  assert.match(workflow, /workflow_run:/);
+  assert.match(workflow, /workflows:\s*\n\s*-\s*ci/);
+  assert.match(workflow, /github\.event\.workflow_run\.event == 'push'/);
+  assert.match(workflow, /github\.event\.workflow_run\.head_branch == 'main'/);
+  assert.match(workflow, /github\.event\.workflow_run\.head_repository\.full_name == github\.repository/);
+  assert.match(workflow, /github\.event\.workflow_run\.conclusion == 'success'/);
+  assert.match(workflow, /TESTED_SHA:.*workflow_run\.head_sha/);
+});
+
+test("workflows pin every action to a full commit SHA", () => {
+  const workflows = [
+    fs.readFileSync(ciWorkflowPath, "utf8"),
+    fs.readFileSync(workflowPath, "utf8")
+  ];
+
+  for (const workflow of workflows) {
+    const actionRefs = Array.from(workflow.matchAll(/uses:\s+[^@\s]+@([^\s#]+)/g));
+    assert.ok(actionRefs.length > 0);
+    for (const [, ref] of actionRefs) {
+      assert.match(ref, /^[0-9a-f]{40}$/);
+    }
+  }
 });
 
 test("release workflow restores the signing key from the repository secret", () => {
